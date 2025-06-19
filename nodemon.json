@@ -1,5 +1,5 @@
 {
-  "watch": ["backend/src"],
+  "watch": ["server.js"],
   "ext": "js,json",
   "ignore": [
     "node_modules/",
@@ -9,7 +9,7 @@
     "lib/",
     "hooks/"
   ],
-  "exec": "cd backend && npm run dev",
+  "exec": "node server.js",
   "env": {
     "NODE_ENV": "development"
   }
