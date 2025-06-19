@@ -2,72 +2,12 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Search, TrendingUp, ArrowLeft, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { Search, TrendingUp, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [message, setMessage] = useState<{
-    type: 'success' | 'error' | null;
-    content: string;
-  }>({ type: null, content: '' });
-
-  const handleAnalyze = async () => {
-    if (!searchQuery.trim()) {
-      setMessage({
-        type: 'error',
-        content: 'Please enter a company name to analyze.'
-      });
-      return;
-    }
-
-    setIsLoading(true);
-    setMessage({ type: null, content: '' });
-
-    try {
-      const response = await fetch('/api/v1/analyze', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          companyName: searchQuery.trim()
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setMessage({
-          type: 'success',
-          content: 'Analysis started. Check back soon for insights.'
-        });
-        console.log('Analysis job started with ID:', data.jobId);
-      } else {
-        setMessage({
-          type: 'error',
-          content: data.message || 'Failed to start analysis. Please try again.'
-        });
-      }
-    } catch (error) {
-      console.error('Error submitting analysis request:', error);
-      setMessage({
-        type: 'error',
-        content: 'Network error. Please check your connection and try again.'
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !isLoading) {
-      handleAnalyze();
-    }
-  };
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -124,49 +64,16 @@ export default function HomePage() {
                 placeholder="Enter company name..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyPress={handleKeyPress}
-                disabled={isLoading}
-                className="pl-12 pr-4 py-4 text-lg border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-lg shadow-sm disabled:opacity-50"
+                className="pl-12 pr-4 py-4 text-lg border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-lg shadow-sm"
               />
             </div>
             
             <Button 
               size="lg" 
-              onClick={handleAnalyze}
-              disabled={isLoading || !searchQuery.trim()}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white px-12 py-4 text-lg font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-12 py-4 text-lg font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
             >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Analyzing...
-                </>
-              ) : (
-                'Analyze'
-              )}
+              Analyze
             </Button>
-
-            {/* Status Messages */}
-            {message.type && (
-              <div className="mt-6">
-                <Alert className={`${
-                  message.type === 'success' 
-                    ? 'border-green-200 bg-green-50' 
-                    : 'border-red-200 bg-red-50'
-                }`}>
-                  {message.type === 'success' ? (
-                    <CheckCircle className="h-4 w-4 text-green-600" />
-                  ) : (
-                    <AlertCircle className="h-4 w-4 text-red-600" />
-                  )}
-                  <AlertDescription className={`${
-                    message.type === 'success' ? 'text-green-800' : 'text-red-800'
-                  }`}>
-                    {message.content}
-                  </AlertDescription>
-                </Alert>
-              </div>
-            )}
           </div>
 
           {/* Additional Info */}
@@ -212,8 +119,7 @@ export default function HomePage() {
                 <button
                   key={company}
                   onClick={() => setSearchQuery(company)}
-                  disabled={isLoading}
-                  className="px-4 py-2 bg-white border border-slate-200 rounded-full text-sm text-slate-600 hover:bg-slate-50 hover:border-indigo-300 hover:text-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 bg-white border border-slate-200 rounded-full text-sm text-slate-600 hover:bg-slate-50 hover:border-indigo-300 hover:text-indigo-600 transition-colors"
                 >
                   {company}
                 </button>
