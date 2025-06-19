@@ -4,6 +4,10 @@
   "private": true,
   "main": "server.js",
   "type": "commonjs",
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  },
   "scripts": {
     "dev": "concurrently --kill-others --prefix-colors \"cyan,magenta\" --prefix \"[{name}]\" --names \"frontend,backend\" \"npm run dev:frontend\" \"npm run dev:backend\"",
     "dev:frontend": "next dev -p 3000",
@@ -19,7 +23,12 @@
   "bolt": {
     "startCommand": "npm run dev",
     "framework": "node",
-    "preventNextDev": true
+    "preventNextDev": true,
+    "disableNextDev": true,
+    "commands": {
+      "dev": "npm run dev",
+      "start": "npm run dev"
+    }
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
