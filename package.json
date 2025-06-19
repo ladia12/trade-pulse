@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "concurrently --kill-others --prefix-colors \"cyan,magenta\" --prefix \"[{name}]\" --names \"frontend,backend\" \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "dev": "concurrently --kill-others --prefix-colors \"cyan,magenta\" --prefix \"[{name}]\" --names \"frontend,backend\" \"next dev\" \"cd backend && npm run dev\"",
     "dev:frontend": "next dev",
     "dev:backend": "cd backend && npm run dev",
     "build": "next build",
