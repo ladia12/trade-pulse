@@ -1,3 +1,8 @@
 {
-  "startCommand": "npm run dev"
+  "commands": {
+    "dev": "node server.js",
+    "start": "node server.js"
+  },
+  "framework": "node",
+  "type": "node"
 }
