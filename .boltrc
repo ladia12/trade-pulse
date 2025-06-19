@@ -1,13 +1,14 @@
 {
-  "startCommand": "npm run dev",
-  "framework": "fullstack",
+  "startCommand": "node server.js",
+  "framework": "node",
+  "type": "backend",
   "commands": {
-    "dev": "npm run dev",
-    "start": "npm run dev"
+    "dev": "node server.js",
+    "start": "node server.js"
   },
   "disableNextDev": true,
   "preventNextDev": true,
   "preventDirectNextDev": true,
   "preventAutoDetection": true,
-  "forceFramework": "fullstack"
+  "forceFramework": "node"
 }
