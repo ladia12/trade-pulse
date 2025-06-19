@@ -1,3 +1,9 @@
 {
-  "startCommand": "npm run dev"
+  "startCommand": "npm run dev",
+  "framework": "node",
+  "commands": {
+    "dev": "npm run dev",
+    "start": "npm run dev"
+  },
+  "disableNextDev": true
 }

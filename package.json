@@ -16,6 +16,11 @@
     "install:all": "npm install && cd backend && npm install",
     "postinstall": "cd backend && npm install"
   },
+  "bolt": {
+    "startCommand": "npm run dev",
+    "framework": "node",
+    "preventNextDev": true
+  },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
     "@next/swc-wasm-nodejs": "13.5.1",
