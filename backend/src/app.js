@@ -5,7 +5,7 @@ const rateLimit = require('express-rate-limit');
 
 // Import middlewares
 const logger = require('./middlewares/logger');
-const errorHandler = require('./middlewares/errorHandler');
+const { errorHandler, notFoundHandler } = require('./middlewares/errorHandler');
 
 // Import routes
 const analyzeRoutes = require('./routes/analyze');
@@ -69,16 +69,7 @@ app.get('/', (req, res) => {
 });
 
 // Handle 404 for undefined routes
-app.use('*', (req, res) => {
-  res.status(404).json({
-    status: 'error',
-    message: `Route ${req.originalUrl} not found`,
-    availableEndpoints: {
-      health: '/api/health',
-      analyze: `/api/${process.env.API_VERSION || 'v1'}/analyze`
-    }
-  });
-});
+app.use('*', notFoundHandler);
 
 // Global error handling middleware (must be last)
 app.use(errorHandler);
