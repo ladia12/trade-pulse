@@ -2,8 +2,6 @@
   "name": "trade-pulse-fullstack",
   "version": "0.1.0",
   "private": true,
-  "main": "server.js",
-  "type": "commonjs",
   "scripts": {
     "dev": "concurrently --kill-others --prefix-colors \"cyan,magenta\" --prefix \"[{name}]\" --names \"frontend,backend\" \"npm run dev:frontend\" \"npm run dev:backend\"",
     "dev:frontend": "next dev -p 3000",
@@ -16,6 +14,8 @@
     "install:all": "npm install && cd backend && npm install",
     "postinstall": "cd backend && npm install"
   },
+  "main": "server.js",
+  "type": "module",
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
     "@next/swc-wasm-nodejs": "13.5.1",

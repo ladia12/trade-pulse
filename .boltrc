@@ -1,7 +1,7 @@
 {
   "commands": {
-    "dev": "node server.js",
-    "start": "node server.js"
+    "dev": "npm run dev",
+    "start": "npm run dev"
   },
   "framework": "node",
   "type": "node"
