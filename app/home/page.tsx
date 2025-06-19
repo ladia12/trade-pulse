@@ -64,7 +64,7 @@ export default function HomePage() {
                 placeholder="Enter company name..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-12 pr-4 py-4 text-lg border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 focus:ring-2 focus:ring-opacity-20 focus:outline-none rounded-lg shadow-sm"
+                className="pl-12 pr-4 py-4 text-lg border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-lg shadow-sm"
               />
             </div>
             
@@ -92,7 +92,7 @@ export default function HomePage() {
               <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <TrendingUp className="h-6 w-6 text-emerald-600" />
               </div>
-              <h3 className="text-lg font-semibant text-slate-900 mb-2">Real-time Analysis</h3>
+              <h3 className="text-lg font-semibold text-slate-900 mb-2">Real-time Analysis</h3>
               <p className="text-slate-600 text-sm">
                 Get AI-powered insights from the latest corporate filings and announcements.
               </p>
@@ -119,7 +119,7 @@ export default function HomePage() {
                 <button
                   key={company}
                   onClick={() => setSearchQuery(company)}
-                  className="px-4 py-2 bg-white border border-slate-200 rounded-full text-sm text-slate-600 hover:bg-slate-50 hover:border-indigo-300 hover:text-indigo-600 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-20"
+                  className="px-4 py-2 bg-white border border-slate-200 rounded-full text-sm text-slate-600 hover:bg-slate-50 hover:border-indigo-300 hover:text-indigo-600 transition-colors"
                 >
                   {company}
                 </button>
