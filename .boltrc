@@ -1,8 +1,0 @@
-{
-  "commands": {
-    "dev": "npm run dev",
-    "start": "npm run dev"
-  },
-  "framework": "fullstack",
-  "type": "node"
-}

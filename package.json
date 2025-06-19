@@ -7,15 +7,12 @@
     "dev:frontend": "next dev -p 3000",
     "dev:backend": "cd backend && npm run dev",
     "build": "next build",
-    "start": "npm run dev",
-    "start:frontend": "next start",
+    "start": "next start",
     "start:backend": "cd backend && npm start",
     "lint": "next lint",
     "install:all": "npm install && cd backend && npm install",
     "postinstall": "cd backend && npm install"
   },
-  "main": "server.js",
-  "type": "module",
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
     "@next/swc-wasm-nodejs": "13.5.1",
