@@ -1,5 +1,5 @@
 module.exports = {
-  framework: 'fullstack',
+  framework: 'node',
   commands: {
     dev: 'npm run dev',
     start: 'npm run dev'
@@ -12,7 +12,5 @@ module.exports = {
   startCommand: 'npm run dev',
   disableNextDev: true,
   preventDirectNextDev: true,
-  preventNextDev: true,
-  preventAutoDetection: true,
-  forceFramework: 'fullstack'
+  preventNextDev: true
 };

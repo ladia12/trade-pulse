@@ -22,10 +22,9 @@
   },
   "bolt": {
     "startCommand": "npm run dev",
-    "framework": "fullstack",
+    "framework": "node",
     "preventNextDev": true,
     "disableNextDev": true,
-    "preventDirectNextDev": true,
     "commands": {
       "dev": "npm run dev",
       "start": "npm run dev"
