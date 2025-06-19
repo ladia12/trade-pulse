@@ -1,8 +1,3 @@
 {
-  "commands": {
-    "dev": "node server.js",
-    "start": "node server.js"
-  },
-  "framework": "node",
-  "type": "node"
+  "startCommand": "npm run dev"
 }
