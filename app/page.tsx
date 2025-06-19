@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { 
   Search, 
   FileText, 
@@ -54,9 +55,11 @@ export default function Home() {
               <a href="#insights" className="text-slate-600 hover:text-indigo-600 transition-colors">Sample Insights</a>
               <a href="#access" className="text-slate-600 hover:text-indigo-600 transition-colors">Early Access</a>
             </nav>
-            <Button className="bg-indigo-600 hover:bg-indigo-700 text-white">
-              Get Started
-            </Button>
+            <Link href="/home">
+              <Button className="bg-indigo-600 hover:bg-indigo-700 text-white">
+                Get Started
+              </Button>
+            </Link>
           </div>
         </div>
       </header>
@@ -74,9 +77,11 @@ export default function Home() {
               Our AI analyzes PDF filings and delivers key insights so you don't have to read through every document.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <Button size="lg" className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-4 text-lg">
-                Get Early Access
-              </Button>
+              <Link href="/home">
+                <Button size="lg" className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-4 text-lg">
+                  Get Early Access
+                </Button>
+              </Link>
               <Button variant="outline" size="lg" className="px-8 py-4 text-lg border-slate-300 text-slate-700 hover:bg-slate-50">
                 Watch Demo
               </Button>
