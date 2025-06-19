@@ -1,11 +1,13 @@
 {
   "startCommand": "npm run dev",
-  "framework": "node",
+  "framework": "fullstack",
   "commands": {
     "dev": "npm run dev",
     "start": "npm run dev"
   },
   "disableNextDev": true,
   "preventNextDev": true,
-  "preventDirectNextDev": true
+  "preventDirectNextDev": true,
+  "preventAutoDetection": true,
+  "forceFramework": "fullstack"
 }
