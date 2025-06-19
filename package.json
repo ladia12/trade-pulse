@@ -1,12 +1,16 @@
 {
-  "name": "nextjs",
+  "name": "trade-pulse-fullstack",
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "dev:frontend": "next dev",
+    "dev:backend": "cd backend && npm run dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "start:backend": "cd backend && npm start",
+    "lint": "next lint",
+    "install:backend": "cd backend && npm install"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
@@ -45,6 +49,7 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
+    "concurrently": "^8.2.2",
     "date-fns": "^3.6.0",
     "embla-carousel-react": "^8.3.0",
     "eslint": "8.49.0",
