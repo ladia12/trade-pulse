@@ -11,6 +11,5 @@ module.exports = {
   },
   startCommand: 'npm run dev',
   disableNextDev: true,
-  preventDirectNextDev: true,
-  preventNextDev: true
+  preventDirectNextDev: true
 };
