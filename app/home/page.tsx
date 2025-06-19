@@ -2,61 +2,12 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Search, TrendingUp, ArrowLeft, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { Search, TrendingUp, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
-  const [errorMessage, setErrorMessage] = useState('');
-
-  const handleAnalyze = async () => {
-    if (!searchQuery.trim()) {
-      setErrorMessage('Please enter a company name');
-      setSuccessMessage('');
-      return;
-    }
-
-    setIsLoading(true);
-    setErrorMessage('');
-    setSuccessMessage('');
-
-    try {
-      // Call Express.js API server on port 3001
-      const response = await fetch('http://localhost:3001/api/v1/analyze', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          companyName: searchQuery.trim()
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok && data.status === 'accepted') {
-        setSuccessMessage('Analysis started. Check back soon.');
-        setSearchQuery(''); // Clear the search field on success
-      } else {
-        setErrorMessage(data.message || 'Failed to start analysis');
-      }
-    } catch (error) {
-      console.error('Error calling analyze API:', error);
-      setErrorMessage('Network error. Please check your connection and try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !isLoading) {
-      handleAnalyze();
-    }
-  };
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -104,7 +55,7 @@ export default function HomePage() {
 
           {/* Search Section */}
           <div className="max-w-2xl mx-auto">
-            <div className="relative mb-6">
+            <div className="relative mb-8">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                 <Search className="h-5 w-5 text-slate-400" />
               </div>
@@ -113,47 +64,16 @@ export default function HomePage() {
                 placeholder="Enter company name..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyPress={handleKeyPress}
-                disabled={isLoading}
                 className="pl-12 pr-4 py-4 text-lg border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-lg shadow-sm"
               />
             </div>
             
             <Button 
               size="lg" 
-              onClick={handleAnalyze}
-              disabled={isLoading || !searchQuery.trim()}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white px-12 py-4 text-lg font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-12 py-4 text-lg font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
             >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Analyzing...
-                </>
-              ) : (
-                'Analyze'
-              )}
+              Analyze
             </Button>
-
-            {/* Success Message */}
-            {successMessage && (
-              <Alert className="mt-6 border-green-200 bg-green-50">
-                <CheckCircle className="h-4 w-4 text-green-600" />
-                <AlertDescription className="text-green-800">
-                  {successMessage}
-                </AlertDescription>
-              </Alert>
-            )}
-
-            {/* Error Message */}
-            {errorMessage && (
-              <Alert className="mt-6 border-red-200 bg-red-50">
-                <AlertCircle className="h-4 w-4 text-red-600" />
-                <AlertDescription className="text-red-800">
-                  {errorMessage}
-                </AlertDescription>
-              </Alert>
-            )}
           </div>
 
           {/* Additional Info */}
@@ -199,8 +119,7 @@ export default function HomePage() {
                 <button
                   key={company}
                   onClick={() => setSearchQuery(company)}
-                  disabled={isLoading}
-                  className="px-4 py-2 bg-white border border-slate-200 rounded-full text-sm text-slate-600 hover:bg-slate-50 hover:border-indigo-300 hover:text-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 bg-white border border-slate-200 rounded-full text-sm text-slate-600 hover:bg-slate-50 hover:border-indigo-300 hover:text-indigo-600 transition-colors"
                 >
                   {company}
                 </button>
