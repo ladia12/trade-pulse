@@ -1,19 +1,18 @@
 module.exports = {
-  framework: 'node',
-  type: 'backend',
+  framework: 'fullstack',
   commands: {
-    dev: 'node server.js',
-    start: 'node server.js'
+    dev: 'npm run dev',
+    start: 'npm run dev'
   },
   port: 3000,
   scripts: {
-    dev: 'node server.js',
-    start: 'node server.js'
+    dev: 'npm run dev',
+    start: 'npm run dev'
   },
-  startCommand: 'node server.js',
+  startCommand: 'npm run dev',
   disableNextDev: true,
   preventDirectNextDev: true,
   preventNextDev: true,
   preventAutoDetection: true,
-  forceFramework: 'node'
+  forceFramework: 'fullstack'
 };

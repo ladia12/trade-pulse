@@ -8,13 +8,12 @@
     "node": ">=16.0.0",
     "npm": ">=8.0.0"
   },
-  "keywords": ["node", "express", "fullstack", "backend"],
   "scripts": {
     "dev": "concurrently --kill-others --prefix-colors \"cyan,magenta\" --prefix \"[{name}]\" --names \"frontend,backend\" \"npm run dev:frontend\" \"npm run dev:backend\"",
     "dev:frontend": "next dev -p 3000",
     "dev:backend": "cd backend && npm run dev",
     "build": "next build",
-    "start": "node server.js",
+    "start": "npm run dev",
     "start:frontend": "next start",
     "start:backend": "cd backend && npm start",
     "lint": "next lint",
@@ -22,15 +21,14 @@
     "postinstall": "cd backend && npm install"
   },
   "bolt": {
-    "startCommand": "node server.js",
-    "framework": "node",
-    "type": "backend",
+    "startCommand": "npm run dev",
+    "framework": "fullstack",
     "preventNextDev": true,
     "disableNextDev": true,
     "preventDirectNextDev": true,
     "commands": {
-      "dev": "node server.js",
-      "start": "node server.js"
+      "dev": "npm run dev",
+      "start": "npm run dev"
     }
   },
   "dependencies": {

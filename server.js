@@ -1,42 +1,22 @@
 #!/usr/bin/env node
 
-// Main entry point for Trade Pulse Full-Stack Application
-// This forces Bolt to recognize this as a Node.js backend project
+// This file tricks Bolt into thinking this is a Node.js project
+// instead of a pure Next.js project, forcing it to use npm scripts
 
 const { spawn } = require('child_process');
-const path = require('path');
 
 console.log('🚀 Starting Trade Pulse Full-Stack Application...');
-console.log('📦 Framework: Node.js Backend with Next.js Frontend');
-console.log('🔧 Running: npm run dev (concurrently)');
+console.log('📦 Running: npm run dev');
 
-// Ensure we're in the right directory
-process.chdir(__dirname);
-
-// Run the dev script which starts both frontend and backend
+// Run the dev script
 const child = spawn('npm', ['run', 'dev'], {
   stdio: 'inherit',
-  shell: true,
-  cwd: __dirname
+  shell: true
 });
 
 child.on('error', (error) => {
   console.error('❌ Failed to start application:', error);
-  console.log('🔄 Trying alternative startup method...');
-  
-  // Fallback: start manually
-  const concurrently = require('concurrently');
-  concurrently([
-    { command: 'npm run dev:frontend', name: 'frontend', prefixColor: 'cyan' },
-    { command: 'npm run dev:backend', name: 'backend', prefixColor: 'magenta' }
-  ], {
-    prefix: 'name',
-    killOthers: ['failure', 'success'],
-    restartTries: 3
-  }).catch(err => {
-    console.error('❌ Concurrently failed:', err);
-    process.exit(1);
-  });
+  process.exit(1);
 });
 
 child.on('close', (code) => {
@@ -54,10 +34,3 @@ process.on('SIGTERM', () => {
   console.log('\n🛑 Shutting down gracefully...');
   child.kill('SIGTERM');
 });
-
-// Export for potential require() usage
-module.exports = {
-  start: () => {
-    console.log('📡 Trade Pulse server starting...');
-  }
-};
