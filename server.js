@@ -1,12 +1,23 @@
-export default function handler(req, res) {
-  // Only allow POST requests
-  if (req.method !== 'POST') {
-    return res.status(405).json({
-      status: 'error',
-      message: 'Method not allowed. Use POST.'
-    });
-  }
+const express = require('express');
+const cors = require('cors');
+const path = require('path');
 
+const app = express();
+const PORT = process.env.PORT || 3001;
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Logging middleware
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+  next();
+});
+
+// API Routes
+app.post('/api/v1/analyze', (req, res) => {
   try {
     const { companyName } = req.body;
 
@@ -49,4 +60,39 @@ export default function handler(req, res) {
       message: 'Internal server error. Please try again later.'
     });
   }
-}
+});
+
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    service: 'Trade Pulse API'
+  });
+});
+
+// Handle 404 for API routes
+app.use('/api/*', (req, res) => {
+  res.status(404).json({
+    status: 'error',
+    message: 'API endpoint not found'
+  });
+});
+
+// Error handling middleware
+app.use((error, req, res, next) => {
+  console.error('Unhandled error:', error);
+  res.status(500).json({
+    status: 'error',
+    message: 'Internal server error'
+  });
+});
+
+// Start server
+app.listen(PORT, () => {
+  console.log(`[${new Date().toISOString()}] Express server running on port ${PORT}`);
+  console.log(`[${new Date().toISOString()}] API available at http://localhost:${PORT}/api/v1/analyze`);
+  console.log(`[${new Date().toISOString()}] Health check at http://localhost:${PORT}/api/health`);
+});
+
+module.exports = app;

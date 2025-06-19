@@ -25,7 +25,8 @@ export default function HomePage() {
     setSuccessMessage('');
 
     try {
-      const response = await fetch('/api/v1/analyze', {
+      // Call Express.js API server on port 3001
+      const response = await fetch('http://localhost:3001/api/v1/analyze', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
