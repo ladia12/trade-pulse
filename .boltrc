@@ -3,6 +3,6 @@
     "dev": "npm run dev",
     "start": "npm run dev"
   },
-  "framework": "node",
+  "framework": "fullstack",
   "type": "node"
 }
