@@ -16,22 +16,61 @@ async function checkBrowserInstallation() {
 }
 
 /**
- * Install Playwright browsers
+ * Install Playwright browsers with fallback strategies
  */
 async function installBrowsers() {
   console.log('📦 Installing Playwright browsers...');
   console.log('⏳ This may take a few minutes...');
 
+  // Strategy 1: Try with system dependencies
   try {
+    console.log('🔧 Attempting installation with system dependencies...');
     execSync('npx playwright install chromium --with-deps', {
       stdio: 'inherit',
       timeout: 300000 // 5 minutes timeout
     });
-    console.log('✅ Browsers installed successfully');
+    console.log('✅ Browsers installed successfully with dependencies');
     return true;
   } catch (error) {
-    console.error('❌ Failed to install browsers:', error.message);
-    console.error('💡 Please run manually: npx playwright install chromium --with-deps');
+    console.log('⚠️ Installation with deps failed, trying fallback...');
+  }
+
+  // Strategy 2: Try without system dependencies
+  try {
+    console.log('🔧 Attempting installation without system dependencies...');
+    execSync('npx playwright install chromium', {
+      stdio: 'inherit',
+      timeout: 300000 // 5 minutes timeout
+    });
+    console.log('✅ Browsers installed successfully (without system deps)');
+    console.log('⚠️  Note: Some system dependencies might be missing');
+    return true;
+  } catch (error) {
+    console.log('⚠️ Standard installation failed, trying force download...');
+  }
+
+  // Strategy 3: Force download
+  try {
+    console.log('🔧 Attempting forced browser download...');
+    execSync('PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=false npx playwright install chromium', {
+      stdio: 'inherit',
+      timeout: 300000,
+      env: { ...process.env, PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 'false' }
+    });
+    console.log('✅ Browsers force-installed successfully');
+    return true;
+  } catch (error) {
+    console.error('❌ All installation strategies failed');
+    console.error('🔍 Error details:', error.message);
+    console.error('');
+    console.error('🛠️  Manual installation options:');
+    console.error('   1. npx playwright install chromium');
+    console.error('   2. npx playwright install chromium --with-deps');
+    console.error('   3. PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=false npx playwright install chromium');
+    console.error('');
+    console.error('🐳 For Docker/CI environments:');
+    console.error('   - Use a base image with browsers pre-installed');
+    console.error('   - Install system dependencies manually first');
     return false;
   }
 }

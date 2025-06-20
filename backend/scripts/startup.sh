@@ -13,19 +13,39 @@ is_ci_environment() {
     [[ -n "$CI" || -n "$DOCKER" || -n "$GITHUB_ACTIONS" || -n "$GITLAB_CI" ]]
 }
 
-# Function to install browsers
+# Function to install browsers with fallback strategies
 install_browsers() {
     echo "📦 Installing Playwright browsers..."
 
     if is_ci_environment; then
         echo "🔧 CI/Docker environment detected"
-        npx playwright install chromium --with-deps
+
+        # Try multiple strategies for CI/Docker
+        echo "🔧 Strategy 1: Installing with dependencies..."
+        if npx playwright install chromium --with-deps 2>/dev/null; then
+            echo "✅ Installed with system dependencies"
+            return 0
+        fi
+
+        echo "⚠️ With-deps failed, trying without dependencies..."
+        if npx playwright install chromium 2>/dev/null; then
+            echo "✅ Installed without system dependencies"
+            echo "⚠️  Note: Some system dependencies might be missing"
+            return 0
+        fi
+
+        echo "⚠️ Standard install failed, trying force download..."
+        if PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=false npx playwright install chromium 2>/dev/null; then
+            echo "✅ Force download successful"
+            return 0
+        fi
+
+        echo "❌ All CI installation strategies failed"
+        return 1
     else
         echo "💻 Local environment detected"
-        npm run install-browsers
+        npm run install-browsers-safe
     fi
-
-    echo "✅ Browser installation completed"
 }
 
 # Function to check browser installation
