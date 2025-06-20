@@ -6,7 +6,15 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "postinstall": "npx playwright install chromium --with-deps",
+    "setup": "npm install && npx playwright install chromium --with-deps",
+    "setup-dev": "npm install && npx playwright install chromium",
+    "check-browsers": "npx playwright install --dry-run",
+    "install-browsers": "npx playwright install chromium --with-deps",
+    "startup": "bash scripts/startup.sh",
+    "safe-start": "npm run check-browsers && npm start",
+    "safe-dev": "npm run check-browsers && npm run dev"
   },
   "keywords": ["express", "api", "nse", "corporate", "analysis"],
   "author": "Trade Pulse Team",
