@@ -1,13 +1,16 @@
 const express = require('express');
 const analyzeController = require('../controllers/analyze.controller');
+const { nseRateLimiter } = require('../middlewares/rateLimiter');
 
 const router = express.Router();
 
 /**
  * POST /api/v1/analyze
- * Accepts a company analysis request
+ * Accepts a company analysis request with NSE corporate filings scraping
+ * Query params:
+ * - download=true: Optional, to enable PDF downloads
  */
-router.post('/', analyzeController.analyzeCompany);
+router.post('/', nseRateLimiter, analyzeController.analyzeCompany);
 
 /**
  * GET /api/v1/analyze/status
