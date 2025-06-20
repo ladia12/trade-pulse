@@ -765,11 +765,16 @@ async function extractFilingData(page, companyName) {
           // 5: FILE SIZE
           // 6: BROADCAST DATE/TIME
 
-          // Extract broadcast date/time from 7th column (index 6)
+                    // Extract broadcast date/time from 7th column (index 6)
           const broadcastCell = cells[6];
-          const broadcastDateText = broadcastCell?.textContent?.trim() || '';
+          let broadcastDateText = broadcastCell?.textContent?.trim() || '';
 
-          // NSE date format: "18-Jun-2025 19:08:25"
+          // Clean up the date text - remove tooltip content and extra text
+          // NSE format: "18-Jun-2025 19:08:25" but may include hover table content
+          broadcastDateText = broadcastDateText.split('Exchange Received Time')[0].trim();
+          broadcastDateText = broadcastDateText.split('today-graph')[0].trim();
+
+          // Extract just the date portion: "18-Jun-2025 19:08:25"
           const nseDate = broadcastDateText.match(/(\d{1,2})-([A-Za-z]{3})-(\d{4})\s+(\d{1,2}):(\d{1,2}):(\d{1,2})/);
 
           let filingDate = null;
@@ -785,9 +790,17 @@ async function extractFilingData(page, companyName) {
             }
           }
 
-          // Fallback to current date if parsing fails
+          // If parsing fails, try to extract year and see if it's really old
           if (!filingDate || isNaN(filingDate.getTime())) {
-            filingDate = new Date();
+            // Try to extract any year from the text to avoid including really old data
+            const yearMatch = broadcastDateText.match(/(\d{4})/);
+            if (yearMatch && parseInt(yearMatch[1]) < 2020) {
+              // If it's very old data, set a very old date so it gets filtered out
+              filingDate = new Date(2000, 0, 1);
+            } else {
+              // Use current date as fallback only for recent-looking data
+              filingDate = new Date();
+            }
           }
 
           // Extract structured data from NSE table
@@ -834,31 +847,45 @@ async function extractFilingData(page, companyName) {
       }).filter(filing => filing !== null);
     });
 
-        // Filter for last 7 days based on NSE broadcast date/time
+                // Filter for last 7 days based on NSE broadcast date/time (simple string comparison)
     const currentDate = new Date();
     const sevenDaysAgo = new Date(currentDate.getTime() - (7 * 24 * 60 * 60 * 1000));
+    const cutoffDateString = sevenDaysAgo.toISOString().split('T')[0]; // YYYY-MM-DD format
 
     console.log(`📅 [FILTER] Current date: ${currentDate.toISOString().split('T')[0]}`);
-    console.log(`📅 [FILTER] Seven days ago: ${sevenDaysAgo.toISOString().split('T')[0]}`);
+    console.log(`📅 [FILTER] Seven days ago (cutoff): ${cutoffDateString}`);
 
-    const recentFilings = filings.filter(filing => {
-      const filingDate = new Date(filing.date);
-      const isRecent = filingDate >= sevenDaysAgo;
+        const recentFilings = filings.filter((filing, index) => {
+      // Filter by date AND by company symbol to ensure we only get the requested company
+      const isRecent = filing.date >= cutoffDateString;
+      const isCorrectCompany = filing.symbol.toUpperCase() === companyName.toUpperCase();
+      const shouldInclude = isRecent && isCorrectCompany;
 
-      if (!isRecent && filing.broadcastDateTime) {
-        console.log(`📅 [OLD] Excluding filing from ${filing.broadcastDateTime}: "${filing.subject}"`);
+      // Debug first 10 filings to understand the data structure
+      if (index < 10) {
+        console.log(`📅 [DEBUG ${index+1}] ${filing.symbol} | ${filing.date}: "${filing.subject}" (Recent: ${isRecent}, Correct Company: ${isCorrectCompany}, Include: ${shouldInclude})`);
       }
 
-      return isRecent;
+      return shouldInclude;
     });
 
-    console.log(`✅ [EXTRACTION] Extracted ${filings.length} total NSE filings`);
+        console.log(`✅ [EXTRACTION] Extracted ${filings.length} total NSE filings`);
     console.log(`📅 [FILTER] ${recentFilings.length} filings from last 7 days (based on BROADCAST DATE/TIME)`);
 
     if (recentFilings.length > 0) {
       const uniqueDates = [...new Set(recentFilings.map(f => f.date))].sort();
       console.log(`📊 [SUMMARY] Recent filing dates: ${uniqueDates.join(', ')}`);
       console.log(`📊 [SAMPLE] Latest filing: "${recentFilings[0]?.subject}" (${recentFilings[0]?.broadcastDateTime})`);
+
+      // Show breakdown by date to understand the volume
+      uniqueDates.forEach(date => {
+        const filingsForDate = recentFilings.filter(f => f.date === date);
+        console.log(`📊 [BREAKDOWN] ${date}: ${filingsForDate.length} filings`);
+
+        // Show first few subjects for this date
+        const subjects = filingsForDate.slice(0, 3).map(f => f.subject).join('", "');
+        console.log(`📊 [SAMPLE SUBJECTS] ${date}: "${subjects}"${filingsForDate.length > 3 ? `... (+${filingsForDate.length - 3} more)` : ''}`);
+      });
     }
 
     // Return recent filings, but if none found, return limited set for debugging
