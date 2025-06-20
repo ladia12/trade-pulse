@@ -8,25 +8,19 @@ const cache = new NodeCache({ stdTTL: 3600 });
  * NSE Scraper Configuration
  */
 const SCRAPER_CONFIG = {
-  // User agents from real browsers
   userAgents: [
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:119.0) Gecko/20100101 Firefox/119.0',
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:120.0) Gecko/20100101 Firefox/120.0',
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0'
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:120.0) Gecko/20100101 Firefox/120.0'
   ],
-
-  // Realistic viewport sizes
   viewports: [
     { width: 1920, height: 1080 },
     { width: 1366, height: 768 },
     { width: 1440, height: 900 },
     { width: 1536, height: 864 }
   ],
-
-  // Browser launch arguments
   launchArgs: [
     '--no-sandbox',
     '--disable-setuid-sandbox',
@@ -41,31 +35,39 @@ const SCRAPER_CONFIG = {
     '--disable-features=TranslateUI',
     '--disable-ipc-flooding-protection'
   ],
-
-  // Timeouts
   timeouts: {
     pageLoad: 30000,
     elementWait: 10000,
     navigation: 15000
-  }
+  },
+  filingUrls: [
+    'https://www.nseindia.com/companies-listing/corporate-filings-announcements',
+    'https://www.nseindia.com/corporates/content/corporate_announcements.htm',
+    'https://www.nseindia.com/corporates/content/corp_filing.html'
+  ]
 };
 
+// ================================
+// UTILITY FUNCTIONS
+// ================================
+
 /**
- * Get random user agent
+ * Get random element from array
  */
-function getRandomUserAgent() {
-  return SCRAPER_CONFIG.userAgents[Math.floor(Math.random() * SCRAPER_CONFIG.userAgents.length)];
+function getRandomElement(array) {
+  return array[Math.floor(Math.random() * array.length)];
 }
 
 /**
- * Get random viewport
+ * Random delay between min and max milliseconds
  */
-function getRandomViewport() {
-  return SCRAPER_CONFIG.viewports[Math.floor(Math.random() * SCRAPER_CONFIG.viewports.length)];
+function randomDelay(min = 2000, max = 5000) {
+  const delay = Math.floor(Math.random() * (max - min + 1)) + min;
+  return new Promise(resolve => setTimeout(resolve, delay));
 }
 
 /**
- * Generate realistic headers
+ * Generate realistic browser headers
  */
 function generateHeaders(userAgent) {
   return {
@@ -84,73 +86,38 @@ function generateHeaders(userAgent) {
 }
 
 /**
- * Add random delay
+ * Simulate human-like behavior
  */
-function randomDelay(min = 2000, max = 5000) {
-  const delay = Math.floor(Math.random() * (max - min + 1)) + min;
-  return new Promise(resolve => setTimeout(resolve, delay));
-}
-
-/**
- * Simulate human-like mouse movement
- */
-async function simulateHumanMovement(page) {
+async function simulateHumanBehavior(page) {
   try {
-    // Get random coordinates within viewport
+    // Random mouse movement
     const viewport = page.viewportSize();
     const x = Math.floor(Math.random() * viewport.width);
     const y = Math.floor(Math.random() * viewport.height);
-
-    // Move mouse in realistic trajectory
     await page.mouse.move(x, y, { steps: 10 });
-    await randomDelay(500, 1500);
-  } catch (error) {
-    console.log('🔄 [MOVEMENT] Mouse movement failed, continuing...');
-  }
-}
 
-/**
- * Simulate random scrolling
- */
-async function simulateScrolling(page) {
-  try {
-    // Random scroll amount
+    // Random scrolling
     const scrollAmount = Math.floor(Math.random() * 500) + 100;
-    await page.evaluate((amount) => {
-      window.scrollBy(0, amount);
-    }, scrollAmount);
+    await page.evaluate((amount) => window.scrollBy(0, amount), scrollAmount);
+
     await randomDelay(1000, 2000);
   } catch (error) {
-    console.log('🔄 [SCROLL] Scrolling failed, continuing...');
+    // Silently continue if human simulation fails
   }
 }
 
-/**
- * Type with human-like delays
- */
-async function humanTypeText(page, selector, text) {
-  const element = await page.waitForSelector(selector, { timeout: SCRAPER_CONFIG.timeouts.elementWait });
-
-  // Clear existing text using triple-click and type
-  await element.click({ clickCount: 3 });
-  await randomDelay(200, 400);
-
-  // Type new text character by character
-  for (let i = 0; i < text.length; i++) {
-    await element.type(text[i]);
-    await randomDelay(100, 200); // Human typing speed
-  }
-}
+// ================================
+// BROWSER MANAGEMENT
+// ================================
 
 /**
  * Initialize browser with stealth configuration
  */
 async function initializeBrowser() {
-  const userAgent = getRandomUserAgent();
-  const viewport = getRandomViewport();
+  const userAgent = getRandomElement(SCRAPER_CONFIG.userAgents);
+  const viewport = getRandomElement(SCRAPER_CONFIG.viewports);
 
-  console.log(`🚀 [BROWSER] Initializing browser with UA: ${userAgent.substring(0, 50)}...`);
-  console.log(`📐 [BROWSER] Viewport: ${viewport.width}x${viewport.height}`);
+  console.log(`🚀 Initializing browser (${viewport.width}x${viewport.height})`);
 
   const browser = await chromium.launch({
     headless: process.env.NODE_ENV === 'production',
@@ -163,36 +130,20 @@ async function initializeBrowser() {
     viewport,
     locale: 'en-US',
     timezoneId: 'Asia/Kolkata',
-    geolocation: { latitude: 12.9716, longitude: 77.5946 }, // Bangalore
+    geolocation: { latitude: 12.9716, longitude: 77.5946 },
     permissions: ['geolocation'],
     extraHTTPHeaders: generateHeaders(userAgent)
   });
 
-  // Override navigator properties for stealth
+  // Add stealth properties
   await context.addInitScript(() => {
-    Object.defineProperty(navigator, 'webdriver', {
-      get: () => undefined,
-    });
-
-    Object.defineProperty(navigator, 'plugins', {
-      get: () => [1, 2, 3, 4, 5],
-    });
-
-    Object.defineProperty(navigator, 'languages', {
-      get: () => ['en-US', 'en'],
-    });
-
-    // Mock Chrome runtime
-    Object.defineProperty(window, 'chrome', {
-      value: {
-        runtime: {},
-      },
-    });
+    Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+    Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
+    Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en'] });
+    Object.defineProperty(window, 'chrome', { value: { runtime: {} } });
   });
 
   const page = await context.newPage();
-
-  // Set additional page configurations
   await page.setDefaultTimeout(SCRAPER_CONFIG.timeouts.pageLoad);
   await page.setDefaultNavigationTimeout(SCRAPER_CONFIG.timeouts.navigation);
 
@@ -200,708 +151,607 @@ async function initializeBrowser() {
 }
 
 /**
- * Establish NSE session by visiting homepage
+ * Establish NSE session
  */
 async function establishNSESession(page) {
-  console.log('🏠 [SESSION] Visiting NSE homepage to establish session...');
+  console.log('🏠 Establishing NSE session...');
 
-  try {
-    await page.goto('https://www.nseindia.com/', {
-      waitUntil: 'networkidle',
-      timeout: SCRAPER_CONFIG.timeouts.pageLoad
-    });
+  await page.goto('https://www.nseindia.com/', {
+    waitUntil: 'networkidle',
+    timeout: SCRAPER_CONFIG.timeouts.pageLoad
+  });
 
-    // Wait for page to fully load
-    await randomDelay(4000, 6000);
+  await randomDelay(4000, 6000);
+  await simulateHumanBehavior(page);
 
-    // Simulate human behavior
-    await simulateHumanMovement(page);
-    await simulateScrolling(page);
-
-    console.log('✅ [SESSION] NSE session established successfully');
-    return true;
-  } catch (error) {
-    console.error('❌ [SESSION] Failed to establish NSE session:', error.message);
-    throw new Error('Failed to establish NSE session');
-  }
+  console.log('✅ NSE session established');
 }
 
 /**
  * Navigate to corporate filings page
  */
 async function navigateToFilingsPage(page) {
-  console.log('📄 [NAVIGATION] Navigating to corporate filings page...');
+  console.log('📄 Navigating to corporate filings page...');
 
-  try {
-    // Try multiple URLs for corporate filings
-    const filingUrls = [
-      'https://www.nseindia.com/companies-listing/corporate-filings-announcements',
-      'https://www.nseindia.com/corporates/content/corporate_announcements.htm',
-      'https://www.nseindia.com/corporates/content/corp_filing.html'
-    ];
+  for (const url of SCRAPER_CONFIG.filingUrls) {
+    try {
+      await page.goto(url, {
+        waitUntil: 'domcontentloaded',
+        timeout: 20000
+      });
 
-    let success = false;
-    for (const url of filingUrls) {
-      try {
-        console.log(`🔍 [NAVIGATION] Trying URL: ${url}`);
+      await randomDelay(2000, 4000);
 
-        await page.goto(url, {
-          waitUntil: 'domcontentloaded',
-          timeout: 20000
-        });
+      const title = await page.title();
 
-        // Wait for basic page structure
-        await randomDelay(2000, 4000);
-
-        // Check if page loaded successfully
-        const title = await page.title();
-        console.log(`📖 [NAVIGATION] Page title: ${title}`);
-
-        if (title.includes('Just a moment') || title.includes('Checking your browser')) {
-          console.log('🛡️ [PROTECTION] Detected protection screen, waiting...');
-          await page.waitForSelector('body', { timeout: 30000 });
-          await randomDelay(10000, 15000);
-        }
-
-        // Check if we can find filing-related elements
-        const hasFilingElements = await page.evaluate(() => {
-          const searchInput = document.querySelector('input[placeholder*="Company"], input[placeholder*="company"], input[name*="company"], input[type="text"]');
-          const table = document.querySelector('table, .data-table, .filings-table');
-          return !!(searchInput || table);
-        });
-
-        if (hasFilingElements) {
-          console.log('✅ [NAVIGATION] Successfully reached corporate filings page');
-          success = true;
-          break;
-        } else {
-          console.log('⚠️ [NAVIGATION] Page loaded but no filing elements found, trying next URL...');
-        }
-
-      } catch (urlError) {
-        console.log(`❌ [NAVIGATION] Failed to load ${url}: ${urlError.message}`);
-        continue;
+      // Handle protection screens
+      if (title.includes('Just a moment') || title.includes('Checking your browser')) {
+        console.log('🛡️ Detected protection screen, waiting...');
+        await page.waitForSelector('body', { timeout: 30000 });
+        await randomDelay(10000, 15000);
       }
-    }
 
-    if (!success) {
-      throw new Error('Could not access any corporate filings page');
-    }
+      // Verify page has required elements
+      const hasFilingElements = await page.evaluate(() => {
+        const searchInput = document.querySelector('input[placeholder*="Company"], input[placeholder*="company"], input[name*="company"], input[type="text"]');
+        const table = document.querySelector('table, .data-table, .filings-table');
+        return !!(searchInput || table);
+      });
 
-    return true;
-  } catch (error) {
-    console.error('❌ [NAVIGATION] Failed to navigate to filings page:', error.message);
-    throw new Error('Failed to navigate to corporate filings page');
+      if (hasFilingElements) {
+        console.log('✅ Successfully reached corporate filings page');
+        return;
+      }
+
+    } catch (error) {
+      console.log(`⚠️ Failed to load ${url}, trying next...`);
+      continue;
+    }
+  }
+
+  throw new Error('Could not access any corporate filings page');
+}
+
+// ================================
+// SEARCH AND DROPDOWN HANDLING
+// ================================
+
+/**
+ * Find and focus search input
+ */
+async function findSearchInput(page) {
+  const searchSelectors = [
+    'input[placeholder="Company Name or Symbol"]',
+    'input[placeholder*="Company Name or Symbol"]',
+    'input[placeholder*="Company Name"]',
+    'input[placeholder*="Symbol"]',
+    'input[placeholder*="Company"]',
+    'input[placeholder*="Search"]',
+    'input[name*="company"]',
+    'input[id*="company"]',
+    '.search-input',
+    'input[type="text"]'
+  ];
+
+  for (const selector of searchSelectors) {
+    try {
+      const input = await page.waitForSelector(selector, { timeout: 3000 });
+      if (input) {
+        const placeholder = await input.getAttribute('placeholder');
+        console.log(`✅ Found search input: "${placeholder}"`);
+        return input;
+      }
+    } catch (error) {
+      continue;
+    }
+  }
+
+  throw new Error('Could not find company search input field');
+}
+
+/**
+ * Type company name with human-like delays
+ */
+async function typeCompanyName(page, searchInput, companyName) {
+  await searchInput.focus();
+  await randomDelay(500, 1000);
+
+  // Clear existing text
+  await page.keyboard.down('Control');
+  await page.keyboard.press('KeyA');
+  await page.keyboard.up('Control');
+  await page.keyboard.press('Delete');
+  await randomDelay(200, 500);
+
+  // Type character by character
+  for (let i = 0; i < companyName.length; i++) {
+    await page.keyboard.type(companyName[i]);
+    await randomDelay(100, 200);
   }
 }
 
 /**
- * Search for company filings with NSE-specific dropdown handling
+ * Find dropdown suggestions
+ */
+async function findDropdown(page) {
+  const dropdownSelectors = [
+    '.autocompleteList',
+    '.tt-suggestion',
+    '.tt-menu',
+    '[role="listbox"]',
+    '.dropdown-menu',
+    '.autocomplete-suggestions',
+    '.search-suggestions',
+    '.dropdown-content'
+  ];
+
+  for (const selector of dropdownSelectors) {
+    try {
+      const dropdown = await page.waitForSelector(selector, {
+        timeout: 8000,
+        state: 'visible'
+      });
+      if (dropdown) {
+        console.log(`✅ Found dropdown: ${selector}`);
+        return { dropdown, selector };
+      }
+    } catch (error) {
+      continue;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Find and select best matching option
+ */
+async function selectBestOption(page, dropdownSelector, companyName) {
+  const optionSelectors = [
+    '.autocompleteList.tt-suggestion',
+    '.tt-suggestion',
+    '.autocompleteList',
+    `${dropdownSelector} [role="option"]`,
+    `${dropdownSelector} li`,
+    `${dropdownSelector} .dropdown-item`,
+    `${dropdownSelector} .suggestion`,
+    `${dropdownSelector} .option`
+  ];
+
+  let options = [];
+  for (const selector of optionSelectors) {
+    try {
+      options = await page.$$(selector);
+      if (options.length > 0) {
+        console.log(`✅ Found ${options.length} options`);
+        break;
+      }
+    } catch (error) {
+      continue;
+    }
+  }
+
+  if (options.length === 0) {
+    throw new Error('No dropdown options found');
+  }
+
+  // Find best matching option
+  const searchTerm = companyName.toLowerCase();
+  let selectedOption = null;
+
+  for (let i = 0; i < Math.min(options.length, 10); i++) {
+    try {
+      const fullText = await options[i].textContent();
+      const cleanText = fullText?.trim() || '';
+
+      // Extract company name and symbol from NSE structure
+      let companyNameSpan = '';
+      let symbolSpan = '';
+
+      try {
+        const ltSpan = await options[i].$('.lt');
+        const symbolSpanEl = await options[i].$('span:not(.lt)');
+
+        if (ltSpan) companyNameSpan = await ltSpan.textContent();
+        if (symbolSpanEl) symbolSpan = await symbolSpanEl.textContent();
+      } catch (spanError) {
+        // Use full text if span extraction fails
+      }
+
+      if (cleanText.length === 0) continue;
+
+      const lowerText = cleanText.toLowerCase();
+      const lowerCompanyName = companyNameSpan.toLowerCase();
+      const lowerSymbol = symbolSpan.toLowerCase();
+
+      // Priority matching logic
+      if (lowerSymbol === searchTerm) {
+        selectedOption = options[i];
+        console.log(`🎯 Exact symbol match: "${symbolSpan}"`);
+        break;
+      }
+
+      if (lowerSymbol.includes(searchTerm) || searchTerm.includes(lowerSymbol)) {
+        selectedOption = options[i];
+        console.log(`🎯 Symbol match: "${symbolSpan}"`);
+        break;
+      }
+
+      if (lowerCompanyName.startsWith(searchTerm) || lowerText.startsWith(searchTerm)) {
+        selectedOption = options[i];
+        console.log(`🎯 Name match: "${companyNameSpan || cleanText}"`);
+        break;
+      }
+
+      if ((lowerText.includes(searchTerm) || lowerCompanyName.includes(searchTerm)) && !selectedOption) {
+        selectedOption = options[i];
+        console.log(`🎯 Partial match: "${cleanText}"`);
+      }
+    } catch (error) {
+      continue;
+    }
+  }
+
+  // Fallback to first option
+  if (!selectedOption && options.length > 0) {
+    selectedOption = options[0];
+    const firstText = await selectedOption.textContent();
+    console.log(`🎯 Using first option: "${firstText?.trim()}"`);
+  }
+
+  if (!selectedOption) {
+    throw new Error(`No suitable company option found for: ${companyName}`);
+  }
+
+  return selectedOption;
+}
+
+/**
+ * Search for company filings with dropdown handling
  */
 async function searchCompanyFilings(page, companyName) {
-  console.log(`🔍 [SEARCH] Searching for company: ${companyName}`);
-  console.log(`🎯 [SEARCH] Target: NSE Corporate Filings with dropdown selection`);
+  console.log(`🔍 Searching for company: ${companyName}`);
 
   try {
-    // NSE-specific search selector for "Company Name or Symbol" placeholder
-    const searchSelectors = [
-      'input[placeholder="Company Name or Symbol"]',
-      'input[placeholder*="Company Name or Symbol"]',
-      'input[placeholder*="Company Name"]',
-      'input[placeholder*="Symbol"]',
-      'input[placeholder*="Company"]',
-      'input[placeholder*="Search"]',
-      'input[name*="company"]',
-      'input[id*="company"]',
-      '.search-input',
-      'input[type="text"]'
-    ];
+    // Find and focus search input
+    const searchInput = await findSearchInput(page);
 
-    let searchInput = null;
-    let workingSelector = null;
+    // Type company name
+    await typeCompanyName(page, searchInput, companyName);
 
-    console.log(`🔍 [SEARCH] Looking for search input field...`);
-    for (const selector of searchSelectors) {
-      try {
-        searchInput = await page.waitForSelector(selector, { timeout: 3000 });
-        if (searchInput) {
-          // Verify this is the right field by checking placeholder
-          const placeholder = await searchInput.getAttribute('placeholder');
-          console.log(`✅ [SEARCH] Found input with placeholder: "${placeholder}"`);
-          workingSelector = selector;
-          break;
-        }
-      } catch (error) {
-        console.log(`⚠️ [SEARCH] Selector "${selector}" not found`);
-        continue;
-      }
-    }
-
-    if (!searchInput || !workingSelector) {
-      throw new Error('Could not find company search input field with "Company Name or Symbol" placeholder');
-    }
-
-    // Focus and clear the search input
-    console.log(`🎯 [SEARCH] Focusing on search input...`);
-    await searchInput.focus();
-    await randomDelay(500, 1000);
-
-    // Clear any existing text
-    await page.keyboard.down('Control');
-    await page.keyboard.press('KeyA');
-    await page.keyboard.up('Control');
-    await page.keyboard.press('Delete');
-    await randomDelay(200, 500);
-
-    // Type company name with realistic delays
-    console.log(`⌨️ [SEARCH] Typing "${companyName}" into search field...`);
-    for (let i = 0; i < companyName.length; i++) {
-      await page.keyboard.type(companyName[i]);
-      await randomDelay(100, 200); // Human typing speed
-    }
-
-    // Wait for dropdown to appear
-    console.log(`⏳ [DROPDOWN] Waiting for dropdown suggestions...`);
+    // Wait for dropdown
     await randomDelay(1000, 2000);
 
-    // NSE-specific dropdown selectors based on actual structure
-    const dropdownSelectors = [
-      '.autocompleteList',
-      '.tt-suggestion',
-      '.tt-menu',
-      '[role="listbox"]',
-      '.dropdown-menu',
-      '.autocomplete-suggestions',
-      '.search-suggestions',
-      '.dropdown-content',
-      '.typeahead-dropdown',
-      '.suggestion-list',
-      '.search-dropdown',
-      '.autocomplete-dropdown'
-    ];
+    // Find dropdown
+    const dropdownInfo = await findDropdown(page);
 
-    let dropdown = null;
-    let dropdownSelector = null;
-
-    for (const selector of dropdownSelectors) {
-      try {
-        dropdown = await page.waitForSelector(selector, {
-          timeout: 8000,
-          state: 'visible'
-        });
-        if (dropdown) {
-          console.log(`✅ [DROPDOWN] Found dropdown with selector: ${selector}`);
-          dropdownSelector = selector;
-          break;
-        }
-      } catch (error) {
-        console.log(`⚠️ [DROPDOWN] Selector "${selector}" not found`);
-        continue;
-      }
-    }
-
-    if (!dropdown) {
-      console.log(`⚠️ [DROPDOWN] No dropdown appeared, trying direct search...`);
+    if (!dropdownInfo) {
+      console.log('⚠️ No dropdown found, trying direct search...');
       await page.keyboard.press('Enter');
       await randomDelay(3000, 5000);
-      return true;
+      return;
     }
 
-    // Look for NSE dropdown options with specific structure
-    console.log(`🔍 [DROPDOWN] Searching for dropdown options...`);
-    await randomDelay(1000, 2000);
+    // Select best option
+    const selectedOption = await selectBestOption(page, dropdownInfo.selector, companyName);
 
-    const optionSelectors = [
-      '.autocompleteList.tt-suggestion',
-      '.tt-suggestion',
-      '.autocompleteList',
-      `${dropdownSelector} [role="option"]`,
-      `${dropdownSelector} li`,
-      `${dropdownSelector} .dropdown-item`,
-      `${dropdownSelector} .suggestion`,
-      `${dropdownSelector} .option`,
-      `${dropdownSelector} div[data-value]`,
-      `${dropdownSelector} a`,
-      `${dropdownSelector} span`
-    ];
-
-    let options = [];
-    let optionSelector = null;
-
-    for (const selector of optionSelectors) {
-      try {
-        options = await page.$$(selector);
-        if (options.length > 0) {
-          console.log(`✅ [DROPDOWN] Found ${options.length} options with selector: ${selector}`);
-          optionSelector = selector;
-          break;
-        }
-      } catch (error) {
-        continue;
-      }
-    }
-
-    if (options.length === 0) {
-      console.log(`⚠️ [DROPDOWN] No options found, trying Enter key...`);
-      await page.keyboard.press('Enter');
-      await randomDelay(3000, 5000);
-      return true;
-    }
-
-        // Extract option texts and find best match for NSE format
-    console.log(`🔍 [MATCHING] Analyzing dropdown options for "${companyName}"...`);
-    let selectedOption = null;
-    const searchTerm = companyName.toLowerCase();
-
-    for (let i = 0; i < Math.min(options.length, 10); i++) { // Check first 10 options
-      try {
-        // Get both full text and individual span elements for NSE structure
-        const fullText = await options[i].textContent();
-        const cleanText = fullText?.trim() || '';
-
-        // Try to extract company name and symbol from NSE structure
-        let companyNameSpan = '';
-        let symbolSpan = '';
-
-        try {
-          // Look for .lt span (company name) and regular span (symbol)
-          const ltSpan = await options[i].$('.lt');
-          const symbolSpanEl = await options[i].$('span:not(.lt)');
-
-          if (ltSpan) {
-            companyNameSpan = await ltSpan.textContent();
-          }
-          if (symbolSpanEl) {
-            symbolSpan = await symbolSpanEl.textContent();
-          }
-        } catch (spanError) {
-          // If span extraction fails, use full text
-        }
-
-        console.log(`   Option ${i + 1}: "${cleanText}"`);
-        if (companyNameSpan && symbolSpan) {
-          console.log(`     Company: "${companyNameSpan}" | Symbol: "${symbolSpan}"`);
-        }
-
-        if (cleanText.length > 0) {
-          const lowerText = cleanText.toLowerCase();
-          const lowerCompanyName = companyNameSpan.toLowerCase();
-          const lowerSymbol = symbolSpan.toLowerCase();
-
-          // Priority 1: Exact symbol match (e.g., search "RELIANCE" matches symbol "RELIANCE")
-          if (lowerSymbol === searchTerm) {
-            selectedOption = options[i];
-            console.log(`🎯 [EXACT SYMBOL] Found exact symbol match: "${symbolSpan}" for search "${companyName}"`);
-            break;
-          }
-
-          // Priority 2: Symbol contains search term (e.g., "RIL" in "RELIANCE")
-          if (lowerSymbol.includes(searchTerm) || searchTerm.includes(lowerSymbol)) {
-            selectedOption = options[i];
-            console.log(`🎯 [SYMBOL MATCH] Found symbol match: "${symbolSpan}" for search "${companyName}"`);
-            break;
-          }
-
-          // Priority 3: Company name starts with search term
-          if (lowerCompanyName.startsWith(searchTerm) || lowerText.startsWith(searchTerm)) {
-            selectedOption = options[i];
-            console.log(`🎯 [NAME STARTS] Found name match: "${companyNameSpan || cleanText}" for search "${companyName}"`);
-            break;
-          }
-
-          // Priority 4: Contains search term anywhere (fallback)
-          if (lowerText.includes(searchTerm) || lowerCompanyName.includes(searchTerm)) {
-            if (!selectedOption) { // Only take first match of this type
-              selectedOption = options[i];
-              console.log(`🎯 [CONTAINS] Found partial match: "${cleanText}" for search "${companyName}"`);
-            }
-          }
-        }
-      } catch (error) {
-        console.log(`⚠️ [OPTION] Could not read option ${i + 1}: ${error.message}`);
-      }
-    }
-
-    // Fallback to first option if no good match found
-    if (!selectedOption && options.length > 0) {
-      selectedOption = options[0];
-      const firstText = await selectedOption.textContent();
-      console.log(`🎯 [FALLBACK] Using first option: "${firstText?.trim()}"`);
-    }
-
-    if (!selectedOption) {
-      throw new Error(`No suitable company option found in dropdown for: ${companyName}`);
-    }
-
-    // Click the selected option
+    // Click selected option
     const selectedText = await selectedOption.textContent();
-    console.log(`🖱️ [SELECTION] Clicking on: "${selectedText?.trim()}"`);
+    console.log(`🖱️ Selecting: "${selectedText?.trim()}"`);
 
-    // Scroll option into view if needed
     try {
       await selectedOption.scrollIntoViewIfNeeded();
       await randomDelay(500, 1000);
     } catch (error) {
-      console.log(`⚠️ [SCROLL] Could not scroll option into view: ${error.message}`);
+      // Continue if scrolling fails
     }
 
-    // Click the option
     await selectedOption.click();
     await randomDelay(2000, 3000);
 
-    // Wait for dropdown to close and filings to load
-    console.log(`⏳ [LOADING] Waiting for corporate filings to load...`);
+    // Wait for dropdown to close
     try {
-      await page.waitForSelector(dropdownSelector, {
+      await page.waitForSelector(dropdownInfo.selector, {
         state: 'hidden',
         timeout: 5000
       });
-      console.log(`✅ [DROPDOWN] Dropdown closed successfully`);
     } catch (error) {
-      console.log(`⚠️ [DROPDOWN] Dropdown still visible: ${error.message}`);
+      // Continue if dropdown doesn't close
     }
 
-    // Wait for filings table to appear
+    // Wait for filings to load
     await randomDelay(3000, 5000);
-
-    // Check if filings data loaded
-    const filingsIndicators = [
-      'table tbody tr',
-      '.filing-row',
-      '.data-table',
-      '.results-table',
-      '.filings-table'
-    ];
-
-    let filingsLoaded = false;
-    for (const indicator of filingsIndicators) {
-      try {
-        const elements = await page.$$(indicator);
-        if (elements.length > 0) {
-          console.log(`✅ [FILINGS] Found ${elements.length} filing elements with selector: ${indicator}`);
-          filingsLoaded = true;
-          break;
-        }
-      } catch (error) {
-        continue;
-      }
-    }
-
-    if (!filingsLoaded) {
-      console.log(`⚠️ [FILINGS] No filing elements found, but selection completed`);
-    }
-
-    console.log(`✅ [SEARCH] Company search and dropdown selection completed`);
-    console.log(`📋 [SUMMARY] Selected: "${selectedText?.trim()}" for search: "${companyName}"`);
-    return true;
+    console.log('✅ Company search completed');
 
   } catch (error) {
-    console.error('❌ [SEARCH] Company search failed:', error.message);
-    console.error('🔍 [DEBUG] Current page URL:', await page.url());
+    console.error('❌ Company search failed:', error.message);
 
-    // Try fallback: direct Enter press
+    // Fallback: try direct Enter
     try {
-      console.log(`🔄 [FALLBACK] Attempting direct search with Enter key...`);
+      console.log('🔄 Attempting fallback search...');
       await page.keyboard.press('Enter');
       await randomDelay(3000, 5000);
-      console.log(`✅ [FALLBACK] Direct search completed`);
-      return true;
+      console.log('✅ Fallback search completed');
     } catch (fallbackError) {
-      console.error('❌ [FALLBACK] Direct search also failed:', fallbackError.message);
-      throw new Error(`Failed to search for company: ${companyName}. Original error: ${error.message}`);
+      throw new Error(`Failed to search for company: ${companyName}. Error: ${error.message}`);
     }
   }
 }
 
+// ================================
+// DATA EXTRACTION
+// ================================
+
 /**
- * Extract filing data from NSE corporate filings table
+ * Wait for page loading to complete
+ */
+async function waitForPageLoad(page) {
+  const loadingSelectors = [
+    '.loading',
+    '.spinner',
+    '.loader',
+    '[data-loading]',
+    '.data-loading'
+  ];
+
+  for (const selector of loadingSelectors) {
+    try {
+      const loading = await page.$(selector);
+      if (loading) {
+        console.log('⏳ Waiting for page to load...');
+        await page.waitForSelector(selector, {
+          state: 'hidden',
+          timeout: 15000
+        });
+        console.log('✅ Page loaded');
+        break;
+      }
+    } catch (error) {
+      // Continue if loading indicator not found
+    }
+  }
+
+  await randomDelay(2000, 3000);
+}
+
+/**
+ * Find filings table
+ */
+async function findFilingsTable(page) {
+  const tableSelectors = [
+    'table',
+    '.table',
+    '.data-table',
+    '.filings-table',
+    '.results-table',
+    '.filing-container table',
+    '.content-table',
+    '[role="table"]',
+    'table.table-striped',
+    'table.table-bordered'
+  ];
+
+  for (const selector of tableSelectors) {
+    try {
+      const tables = await page.$$(selector);
+      for (const table of tables) {
+        const rows = await table.$$('tbody tr, tr');
+        if (rows.length > 0) {
+          console.log(`✅ Found table with ${rows.length} rows`);
+          return table;
+        }
+      }
+    } catch (error) {
+      continue;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Check for empty state
+ */
+async function checkEmptyState(page, companyName) {
+  const noResultsSelectors = [
+    '.no-results',
+    '.empty-state',
+    '.no-data',
+    '[data-empty]',
+    'p:contains("No")',
+    'div:contains("No results")',
+    'span:contains("No filings")'
+  ];
+
+  for (const selector of noResultsSelectors) {
+    try {
+      const element = await page.$(selector);
+      if (element) {
+        const text = await element.textContent();
+        console.log(`ℹ️ Empty state found: "${text?.trim()}"`);
+        return true;
+      }
+    } catch (error) {
+      continue;
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Parse NSE date format
+ */
+function parseNSEDate(dateText) {
+  // Clean up date text and extract NSE format: "18-Jun-2025 19:08:25"
+  const cleanText = dateText.split('Exchange Received Time')[0]
+                           .split('today-graph')[0]
+                           .trim();
+
+  const nseDate = cleanText.match(/(\d{1,2})-([A-Za-z]{3})-(\d{4})\s+(\d{1,2}):(\d{1,2}):(\d{1,2})/);
+
+  if (nseDate) {
+    const [, day, monthStr, year, hour, minute, second] = nseDate;
+    const months = {
+      'jan': 0, 'feb': 1, 'mar': 2, 'apr': 3, 'may': 4, 'jun': 5,
+      'jul': 6, 'aug': 7, 'sep': 8, 'oct': 9, 'nov': 10, 'dec': 11
+    };
+
+    const month = months[monthStr.toLowerCase()];
+    if (month !== undefined) {
+      return new Date(parseInt(year), month, parseInt(day), parseInt(hour), parseInt(minute), parseInt(second));
+    }
+  }
+
+  // Fallback for invalid dates
+  const yearMatch = cleanText.match(/(\d{4})/);
+  if (yearMatch && parseInt(yearMatch[1]) < 2020) {
+    return new Date(2000, 0, 1); // Very old date for filtering
+  }
+
+  return new Date(); // Current date as fallback
+}
+
+/**
+ * Extract attachments from row
+ */
+function extractAttachments(row) {
+  return Array.from(row.querySelectorAll('a[href]'))
+    .map(link => ({
+      url: link.href,
+      text: link.textContent?.trim() || '',
+      type: link.href.includes('.pdf') ? 'PDF' :
+            link.href.includes('.doc') ? 'DOC' :
+            link.href.includes('.xls') ? 'XLS' : 'LINK'
+    }))
+    .filter(att => att.url && att.text && !att.url.includes('get-quotes'));
+}
+
+/**
+ * Extract filing data from NSE table
  */
 async function extractFilingData(page, companyName) {
-  console.log(`📊 [EXTRACTION] Extracting filing data for: ${companyName}`);
-  console.log(`📋 [EXTRACTION] Target: Recent NSE corporate filings (last 7 days)`);
+  console.log(`📊 Extracting filing data for: ${companyName}`);
 
   try {
-    // Wait for results to load after dropdown selection
-    console.log(`⏳ [EXTRACTION] Waiting for filings table to load...`);
-    await randomDelay(3000, 5000);
+    await waitForPageLoad(page);
 
-    // Check for loading indicators first
-    const loadingSelectors = [
-      '.loading',
-      '.spinner',
-      '.loader',
-      '[data-loading]',
-      '.data-loading'
-    ];
-
-    for (const loadingSelector of loadingSelectors) {
-      try {
-        const loading = await page.$(loadingSelector);
-        if (loading) {
-          console.log(`⏳ [LOADING] Found loading indicator, waiting...`);
-          await page.waitForSelector(loadingSelector, {
-            state: 'hidden',
-            timeout: 15000
-          });
-          console.log(`✅ [LOADING] Loading completed`);
-          break;
-        }
-      } catch (error) {
-        // Loading selector not found or didn't disappear, continue
-      }
-    }
-
-    // Additional wait for content to stabilize
-    await randomDelay(2000, 3000);
-
-    // NSE-specific table selectors for corporate filings
-    const tableSelectors = [
-      'table',
-      '.table',
-      '.data-table',
-      '.filings-table',
-      '.results-table',
-      '.filing-container table',
-      '.content-table',
-      '[role="table"]',
-      'table.table-striped',
-      'table.table-bordered'
-    ];
-
-    let resultsTable = null;
-    let tableSelector = null;
-
-    console.log(`🔍 [TABLE] Looking for filings table...`);
-    for (const selector of tableSelectors) {
-      try {
-        const tables = await page.$$(selector);
-        if (tables.length > 0) {
-          // Check if table has data rows
-          for (const table of tables) {
-            const rows = await table.$$('tbody tr, tr');
-            if (rows.length > 0) {
-              resultsTable = table;
-              tableSelector = selector;
-              console.log(`✅ [TABLE] Found table with ${rows.length} rows using selector: ${selector}`);
-              break;
-            }
-          }
-          if (resultsTable) break;
-        }
-      } catch (error) {
-        console.log(`⚠️ [TABLE] Selector "${selector}" failed: ${error.message}`);
-        continue;
-      }
-    }
+    const resultsTable = await findFilingsTable(page);
 
     if (!resultsTable) {
-      console.log(`⚠️ [EXTRACTION] No filings table found`);
-
-      // Check for "no results" or empty state messages
-      const noResultsSelectors = [
-        '.no-results',
-        '.empty-state',
-        '.no-data',
-        '[data-empty]',
-        'p:contains("No")',
-        'div:contains("No results")',
-        'span:contains("No filings")'
-      ];
-
-      let emptyMessage = false;
-      for (const selector of noResultsSelectors) {
-        try {
-          const element = await page.$(selector);
-          if (element) {
-            const text = await element.textContent();
-            console.log(`ℹ️ [EMPTY] Found empty state: "${text?.trim()}"`);
-            emptyMessage = true;
-            break;
-          }
-        } catch (error) {
-          continue;
-        }
-      }
-
-      if (emptyMessage) {
-        console.log(`📝 [RESULT] No filings found for ${companyName} in the last 7 days`);
+      const hasEmptyState = await checkEmptyState(page, companyName);
+      if (hasEmptyState) {
+        console.log(`📝 No filings found for ${companyName}`);
         return [];
       }
 
-      // Try to extract any tabular data visible on page
-      console.log(`🔄 [FALLBACK] Attempting to extract any tabular data...`);
+      // Check for any table rows as fallback
       const allRows = await page.$$('tr');
-      console.log(`🔍 [FALLBACK] Found ${allRows.length} table rows on page`);
       if (allRows.length === 0) {
         return [];
       }
     }
 
-        // Extract NSE corporate filing data with proper structure parsing
-    console.log(`📊 [EXTRACTION] Extracting NSE corporate filing data from table...`);
-    const filings = await page.evaluate(() => {
-      // Find NSE corporate filings table rows specifically
+    // Extract filing data using page evaluation
+    const filings = await page.evaluate((extractAttachments, parseNSEDate) => {
       const tableRows = Array.from(document.querySelectorAll('table tbody tr'));
 
-      // Filter out header rows and empty rows - NSE structure has 7 columns
+      // Filter for NSE structure (7 columns)
       const dataRows = tableRows.filter(row => {
         const cells = row.querySelectorAll('td');
-        return cells.length >= 7; // NSE has 7 columns: SYMBOL, COMPANY NAME, SUBJECT, DETAILS, ATTACHMENT, FILE SIZE, BROADCAST DATE/TIME
+        return cells.length >= 7;
       });
 
-      return dataRows.map((row, index) => {
+      return dataRows.map((row) => {
         try {
           const cells = Array.from(row.querySelectorAll('td'));
-          if (cells.length < 7) {
-            return null;
-          }
+          if (cells.length < 7) return null;
 
           // NSE Table Structure:
-          // 0: SYMBOL
-          // 1: COMPANY NAME
-          // 2: SUBJECT
-          // 3: DETAILS
-          // 4: ATTACHMENT
-          // 5: FILE SIZE
-          // 6: BROADCAST DATE/TIME
+          // 0: SYMBOL, 1: COMPANY NAME, 2: SUBJECT, 3: DETAILS,
+          // 4: ATTACHMENT, 5: FILE SIZE, 6: BROADCAST DATE/TIME
 
-                    // Extract broadcast date/time from 7th column (index 6)
           const broadcastCell = cells[6];
-          let broadcastDateText = broadcastCell?.textContent?.trim() || '';
+          const broadcastDateText = broadcastCell?.textContent?.trim() || '';
 
-          // Clean up the date text - remove tooltip content and extra text
-          // NSE format: "18-Jun-2025 19:08:25" but may include hover table content
-          broadcastDateText = broadcastDateText.split('Exchange Received Time')[0].trim();
-          broadcastDateText = broadcastDateText.split('today-graph')[0].trim();
+          // Parse date using the passed function (converted to string for evaluation)
+          const filingDate = eval(`(${parseNSEDate.toString()})`)(broadcastDateText);
 
-          // Extract just the date portion: "18-Jun-2025 19:08:25"
-          const nseDate = broadcastDateText.match(/(\d{1,2})-([A-Za-z]{3})-(\d{4})\s+(\d{1,2}):(\d{1,2}):(\d{1,2})/);
-
-          let filingDate = null;
-          if (nseDate) {
-            const [, day, monthStr, year, hour, minute, second] = nseDate;
-            const months = {
-              'jan': 0, 'feb': 1, 'mar': 2, 'apr': 3, 'may': 4, 'jun': 5,
-              'jul': 6, 'aug': 7, 'sep': 8, 'oct': 9, 'nov': 10, 'dec': 11
-            };
-            const month = months[monthStr.toLowerCase()];
-            if (month !== undefined) {
-              filingDate = new Date(parseInt(year), month, parseInt(day), parseInt(hour), parseInt(minute), parseInt(second));
-            }
-          }
-
-          // If parsing fails, try to extract year and see if it's really old
-          if (!filingDate || isNaN(filingDate.getTime())) {
-            // Try to extract any year from the text to avoid including really old data
-            const yearMatch = broadcastDateText.match(/(\d{4})/);
-            if (yearMatch && parseInt(yearMatch[1]) < 2020) {
-              // If it's very old data, set a very old date so it gets filtered out
-              filingDate = new Date(2000, 0, 1);
-            } else {
-              // Use current date as fallback only for recent-looking data
-              filingDate = new Date();
-            }
-          }
-
-          // Extract structured data from NSE table
+          // Extract structured data
           const symbol = cells[0]?.textContent?.trim() || '';
           const companyName = cells[1]?.textContent?.trim() || '';
-          const subject = cells[2]?.textContent?.trim() || '';
-          const details = cells[3]?.textContent?.trim() || '';
+          const subject = cells[2]?.textContent?.trim() || 'No subject';
+          const details = cells[3]?.textContent?.trim() || 'No details';
           const fileSize = cells[5]?.textContent?.trim() || '';
 
-          // Extract PDF attachment from ATTACHMENT column
+          // Extract PDF link
           const attachmentCell = cells[4];
           const pdfLink = attachmentCell?.querySelector('a[href*=".pdf"]')?.href || null;
 
-          // Extract additional attachments
-          const attachments = Array.from(row.querySelectorAll('a[href]'))
-            .map(link => ({
-              url: link.href,
-              text: link.textContent?.trim() || '',
-              type: link.href.includes('.pdf') ? 'PDF' :
-                    link.href.includes('.doc') ? 'DOC' :
-                    link.href.includes('.xls') ? 'XLS' : 'LINK'
-            }))
-            .filter(att => att.url && att.text && !att.url.includes('get-quotes')); // Exclude symbol links
+          // Extract all attachments using the passed function
+          const attachments = eval(`(${extractAttachments.toString()})`)(row);
 
           return {
             date: filingDate.toISOString().split('T')[0],
             time: filingDate.toISOString().split('T')[1].split('.')[0],
-            symbol: symbol,
-            companyName: companyName,
-            subject: subject || 'No subject',
-            details: details || 'No details',
-            pdfLink: pdfLink,
-            fileSize: fileSize,
-            attachments: attachments,
-            broadcastDateTime: broadcastDateText,
-            rawDateText: broadcastDateText,
-            cellCount: cells.length,
-            rowIndex: index
+            symbol,
+            companyName,
+            subject,
+            details,
+            pdfLink,
+            fileSize,
+            attachments,
+            broadcastDateTime: broadcastDateText
           };
 
         } catch (error) {
           return null;
         }
       }).filter(filing => filing !== null);
-    });
+    }, extractAttachments, parseNSEDate);
 
-                // Filter for last 7 days based on NSE broadcast date/time (simple string comparison)
+    // Filter for last 7 days and correct company
     const currentDate = new Date();
     const sevenDaysAgo = new Date(currentDate.getTime() - (7 * 24 * 60 * 60 * 1000));
-    const cutoffDateString = sevenDaysAgo.toISOString().split('T')[0]; // YYYY-MM-DD format
+    const cutoffDateString = sevenDaysAgo.toISOString().split('T')[0];
 
-    console.log(`📅 [FILTER] Current date: ${currentDate.toISOString().split('T')[0]}`);
-    console.log(`📅 [FILTER] Seven days ago (cutoff): ${cutoffDateString}`);
-
-        const recentFilings = filings.filter((filing, index) => {
-      // Filter by date AND by company symbol to ensure we only get the requested company
+    const recentFilings = filings.filter(filing => {
       const isRecent = filing.date >= cutoffDateString;
       const isCorrectCompany = filing.symbol.toUpperCase() === companyName.toUpperCase();
-      const shouldInclude = isRecent && isCorrectCompany;
-
-      // Debug first 10 filings to understand the data structure
-      if (index < 10) {
-        console.log(`📅 [DEBUG ${index+1}] ${filing.symbol} | ${filing.date}: "${filing.subject}" (Recent: ${isRecent}, Correct Company: ${isCorrectCompany}, Include: ${shouldInclude})`);
-      }
-
-      return shouldInclude;
+      return isRecent && isCorrectCompany;
     });
 
-        console.log(`✅ [EXTRACTION] Extracted ${filings.length} total NSE filings`);
-    console.log(`📅 [FILTER] ${recentFilings.length} filings from last 7 days (based on BROADCAST DATE/TIME)`);
+    console.log(`✅ Extracted ${filings.length} total filings`);
+    console.log(`📅 Found ${recentFilings.length} recent filings for ${companyName}`);
 
     if (recentFilings.length > 0) {
       const uniqueDates = [...new Set(recentFilings.map(f => f.date))].sort();
-      console.log(`📊 [SUMMARY] Recent filing dates: ${uniqueDates.join(', ')}`);
-      console.log(`📊 [SAMPLE] Latest filing: "${recentFilings[0]?.subject}" (${recentFilings[0]?.broadcastDateTime})`);
-
-      // Show breakdown by date to understand the volume
-      uniqueDates.forEach(date => {
-        const filingsForDate = recentFilings.filter(f => f.date === date);
-        console.log(`📊 [BREAKDOWN] ${date}: ${filingsForDate.length} filings`);
-
-        // Show first few subjects for this date
-        const subjects = filingsForDate.slice(0, 3).map(f => f.subject).join('", "');
-        console.log(`📊 [SAMPLE SUBJECTS] ${date}: "${subjects}"${filingsForDate.length > 3 ? `... (+${filingsForDate.length - 3} more)` : ''}`);
-      });
+      console.log(`📊 Filing dates: ${uniqueDates.join(', ')}`);
     }
 
-    // Return recent filings, but if none found, return limited set for debugging
-    if (recentFilings.length === 0 && filings.length > 0) {
-      console.log(`⚠️ [DEBUG] No recent filings found, showing sample of oldest filings for analysis:`);
-      filings.slice(0, 3).forEach((filing, i) => {
-        console.log(`   ${i+1}. ${filing.broadcastDateTime}: "${filing.subject}"`);
-      });
-      return filings.slice(0, 5); // Return only first 5 for debugging
-    }
-
-    return recentFilings;
+    // Return recent filings, or sample for debugging if none found
+    return recentFilings.length > 0 ? recentFilings : filings.slice(0, 5);
 
   } catch (error) {
-    console.error('❌ [EXTRACTION] Failed to extract filing data:', error.message);
+    console.error('❌ Failed to extract filing data:', error.message);
     throw new Error(`Failed to extract filing data: ${error.message}`);
+  }
+}
+
+// ================================
+// MAIN SCRAPING FUNCTION
+// ================================
+
+/**
+ * Cleanup browser resources
+ */
+async function cleanupBrowser(browser, context, page) {
+  try {
+    if (page) await page.close();
+    if (context) await context.close();
+    if (browser) await browser.close();
+  } catch (error) {
+    console.error('⚠️ Browser cleanup failed:', error.message);
   }
 }
 
@@ -909,13 +759,13 @@ async function extractFilingData(page, companyName) {
  * Main scraping function with retry logic
  */
 async function scrapeNSEFilings(companyName, options = {}) {
-  const { maxRetries = 3, downloadPdfs = false } = options;
+  const { maxRetries = 3 } = options;
   const cacheKey = `nse_filings_${companyName.toLowerCase().replace(/\s+/g, '_')}`;
 
   // Check cache first
   const cached = cache.get(cacheKey);
   if (cached) {
-    console.log(`📋 [CACHE] Returning cached results for: ${companyName}`);
+    console.log(`📋 Returning cached results for: ${companyName}`);
     return cached;
   }
 
@@ -924,24 +774,16 @@ async function scrapeNSEFilings(companyName, options = {}) {
 
   while (attempt < maxRetries) {
     attempt++;
-    console.log(`🔄 [ATTEMPT ${attempt}/${maxRetries}] Starting scraping for: ${companyName}`);
+    console.log(`🔄 Attempt ${attempt}/${maxRetries} for: ${companyName}`);
 
     let browser, context, page;
 
     try {
-      // Initialize browser
+      // Initialize browser and scrape
       ({ browser, context, page } = await initializeBrowser());
-
-      // Establish NSE session
       await establishNSESession(page);
-
-      // Navigate to filings page
       await navigateToFilingsPage(page);
-
-      // Search for company
       await searchCompanyFilings(page, companyName);
-
-      // Extract filing data
       const filings = await extractFilingData(page, companyName);
 
       const result = {
@@ -955,34 +797,26 @@ async function scrapeNSEFilings(companyName, options = {}) {
 
       // Cache the result
       cache.set(cacheKey, result);
+      console.log(`✅ Scraping completed for: ${companyName} (${filings.length} filings)`);
 
-      console.log(`✅ [SUCCESS] Scraping completed for: ${companyName} (${filings.length} filings)`);
       return result;
 
     } catch (error) {
       lastError = error;
-      console.error(`❌ [ATTEMPT ${attempt}] Scraping failed:`, error.message);
+      console.error(`❌ Attempt ${attempt} failed:`, error.message);
 
       if (attempt < maxRetries) {
-        const backoffDelay = Math.pow(2, attempt) * 1000; // Exponential backoff
-        console.log(`⏳ [BACKOFF] Waiting ${backoffDelay}ms before retry...`);
+        const backoffDelay = Math.pow(2, attempt) * 1000;
+        console.log(`⏳ Waiting ${backoffDelay}ms before retry...`);
         await new Promise(resolve => setTimeout(resolve, backoffDelay));
       }
 
     } finally {
-      // Cleanup browser resources
-      try {
-        if (page) await page.close();
-        if (context) await context.close();
-        if (browser) await browser.close();
-      } catch (cleanupError) {
-        console.error('⚠️ [CLEANUP] Browser cleanup failed:', cleanupError.message);
-      }
+      await cleanupBrowser(browser, context, page);
     }
   }
 
-  // All attempts failed
-  console.error(`💥 [FAILED] All ${maxRetries} attempts failed for: ${companyName}`);
+  console.error(`💥 All ${maxRetries} attempts failed for: ${companyName}`);
   throw lastError || new Error('Scraping failed after all retry attempts');
 }
 
