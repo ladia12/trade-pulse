@@ -39,7 +39,7 @@ npx playwright install chromium
 ```bash
 # Create .env file
 echo "NODE_ENV=development" > .env
-echo "PORT=3001" >> .env
+echo "PORT=4000" >> .env
 ```
 
 ## 🚦 Quick Start
@@ -51,7 +51,7 @@ npm run dev
 
 2. **Test the API**:
 ```bash
-curl -X POST http://localhost:3001/api/v1/analyze \
+curl -X POST http://localhost:4000/api/v1/analyze \
   -H "Content-Type: application/json" \
   -d '{"companyName": "RELIANCE"}'
 ```
@@ -284,7 +284,7 @@ DEBUG=true npm run dev
 ### Environment Variables
 ```bash
 NODE_ENV=production
-PORT=3001
+PORT=4000
 DEBUG=false
 ```
 
@@ -299,7 +299,7 @@ module.exports = {
     exec_mode: 'cluster',
     env: {
       NODE_ENV: 'production',
-      PORT: 3001
+      PORT: 4000
     }
   }]
 };
@@ -313,7 +313,7 @@ COPY package*.json ./
 RUN npm ci --only=production
 RUN npx playwright install chromium --with-deps
 COPY . .
-EXPOSE 3001
+EXPOSE 4000
 CMD ["npm", "start"]
 ```
 
@@ -323,14 +323,14 @@ CMD ["npm", "start"]
 
 **Basic Request:**
 ```bash
-curl -X POST http://localhost:3001/api/v1/analyze \
+curl -X POST http://localhost:4000/api/v1/analyze \
   -H "Content-Type: application/json" \
   -d '{"companyName": "TCS"}'
 ```
 
 **With PDF Download:**
 ```bash
-curl -X POST "http://localhost:3001/api/v1/analyze?download=true" \
+curl -X POST "http://localhost:4000/api/v1/analyze?download=true" \
   -H "Content-Type: application/json" \
   -d '{"companyName": "INFY"}'
 ```
@@ -342,7 +342,7 @@ const axios = require('axios');
 
 async function getCorpoorateFilings(companyName) {
   try {
-    const response = await axios.post('http://localhost:3001/api/v1/analyze', {
+    const response = await axios.post('http://localhost:4000/api/v1/analyze', {
       companyName
     });
 
@@ -363,7 +363,7 @@ getCorpoorateFilings('RELIANCE');
 import requests
 
 def get_corporate_filings(company_name):
-    url = "http://localhost:3001/api/v1/analyze"
+    url = "http://localhost:4000/api/v1/analyze"
     payload = {"companyName": company_name}
 
     try:
