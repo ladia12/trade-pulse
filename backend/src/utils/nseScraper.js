@@ -653,7 +653,50 @@ async function extractFilingData(page, companyName) {
     }
 
     // Extract filing data using page evaluation
-    const filings = await page.evaluate((extractAttachments, parseNSEDate) => {
+    const filings = await page.evaluate(() => {
+      // Parse NSE date format (inline function)
+      function parseNSEDate(dateText) {
+        const cleanText = dateText.split('Exchange Received Time')[0]
+                                 .split('today-graph')[0]
+                                 .trim();
+
+        const nseDate = cleanText.match(/(\d{1,2})-([A-Za-z]{3})-(\d{4})\s+(\d{1,2}):(\d{1,2}):(\d{1,2})/);
+
+        if (nseDate) {
+          const [, day, monthStr, year, hour, minute, second] = nseDate;
+          const months = {
+            'jan': 0, 'feb': 1, 'mar': 2, 'apr': 3, 'may': 4, 'jun': 5,
+            'jul': 6, 'aug': 7, 'sep': 8, 'oct': 9, 'nov': 10, 'dec': 11
+          };
+
+          const month = months[monthStr.toLowerCase()];
+          if (month !== undefined) {
+            return new Date(parseInt(year), month, parseInt(day), parseInt(hour), parseInt(minute), parseInt(second));
+          }
+        }
+
+        // Fallback for invalid dates
+        const yearMatch = cleanText.match(/(\d{4})/);
+        if (yearMatch && parseInt(yearMatch[1]) < 2020) {
+          return new Date(2000, 0, 1);
+        }
+
+        return new Date();
+      }
+
+      // Extract attachments from row (inline function)
+      function extractAttachments(row) {
+        return Array.from(row.querySelectorAll('a[href]'))
+          .map(link => ({
+            url: link.href,
+            text: link.textContent?.trim() || '',
+            type: link.href.includes('.pdf') ? 'PDF' :
+                  link.href.includes('.doc') ? 'DOC' :
+                  link.href.includes('.xls') ? 'XLS' : 'LINK'
+          }))
+          .filter(att => att.url && att.text && !att.url.includes('get-quotes'));
+      }
+
       const tableRows = Array.from(document.querySelectorAll('table tbody tr'));
 
       // Filter for NSE structure (7 columns)
@@ -674,8 +717,8 @@ async function extractFilingData(page, companyName) {
           const broadcastCell = cells[6];
           const broadcastDateText = broadcastCell?.textContent?.trim() || '';
 
-          // Parse date using the passed function (converted to string for evaluation)
-          const filingDate = eval(`(${parseNSEDate.toString()})`)(broadcastDateText);
+          // Parse date using inline function
+          const filingDate = parseNSEDate(broadcastDateText);
 
           // Extract structured data
           const symbol = cells[0]?.textContent?.trim() || '';
@@ -688,8 +731,8 @@ async function extractFilingData(page, companyName) {
           const attachmentCell = cells[4];
           const pdfLink = attachmentCell?.querySelector('a[href*=".pdf"]')?.href || null;
 
-          // Extract all attachments using the passed function
-          const attachments = eval(`(${extractAttachments.toString()})`)(row);
+          // Extract all attachments using inline function
+          const attachments = extractAttachments(row);
 
           return {
             date: filingDate.toISOString().split('T')[0],
@@ -708,7 +751,7 @@ async function extractFilingData(page, companyName) {
           return null;
         }
       }).filter(filing => filing !== null);
-    }, extractAttachments, parseNSEDate);
+    });
 
     // Filter for last 7 days and correct company
     const currentDate = new Date();
