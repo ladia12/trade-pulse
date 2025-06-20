@@ -28,11 +28,6 @@ COPY package*.json ./
 # Install Node.js dependencies
 RUN npm ci --only=production
 
-# Try to install Playwright browsers, but don't fail if it doesn't work
-RUN npx playwright install chromium || \
-    npx playwright install chromium --with-deps || \
-    echo "Warning: Playwright browser installation failed, using system browser"
-
 # Copy application code
 COPY . .
 

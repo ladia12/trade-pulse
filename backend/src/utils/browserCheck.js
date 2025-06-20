@@ -81,6 +81,27 @@ async function installBrowsers() {
 async function ensureBrowsersAvailable() {
   console.log('🔍 Checking browser installation...');
 
+  // Check if we're in an environment where browser download should be skipped
+  if (process.env.PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD === 'true') {
+    console.log('🐳 Browser download is disabled, using system browser...');
+    
+    // Only verify that the system browser is available
+    try {
+      const executablePath = chromium.executablePath();
+      console.log(`✅ System Chromium browser found at: ${executablePath}`);
+      console.log('🎉 Browser validation complete');
+      return true;
+    } catch (error) {
+      console.error('❌ System Chromium browser not found');
+      console.error('🔍 Error details:', error.message);
+      console.error('');
+      console.error('🛠️  For Docker/Alpine environments:');
+      console.error('   - Ensure chromium is installed via apk');
+      console.error('   - Set PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH to /usr/bin/chromium-browser');
+      process.exit(1);
+    }
+  }
+
   const isInstalled = await checkBrowserInstallation();
 
   if (!isInstalled) {
