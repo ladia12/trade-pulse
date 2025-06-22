@@ -111,7 +111,7 @@ async function simulateHumanBehavior(page) {
 // ================================
 
 /**
- * Initialize browser with stealth configuration
+ * Initialize browser with stealth configuration and timeout handling
  */
 async function initializeBrowser() {
   const userAgent = getRandomElement(SCRAPER_CONFIG.userAgents);
@@ -119,97 +119,270 @@ async function initializeBrowser() {
 
   console.log(`🚀 Initializing browser (${viewport.width}x${viewport.height})`);
 
-  const browser = await chromium.launch({
-    headless: process.env.NODE_ENV === 'production',
-    args: SCRAPER_CONFIG.launchArgs,
-    ignoreDefaultArgs: ['--enable-automation']
-  });
+  // Add timeout wrapper for each step
+  const withTimeout = (promise, timeoutMs, operation) => {
+    return Promise.race([
+      promise,
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error(`${operation} timeout after ${timeoutMs}ms`)), timeoutMs)
+      )
+    ]);
+  };
 
-  const context = await browser.newContext({
-    userAgent,
-    viewport,
-    locale: 'en-US',
-    timezoneId: 'Asia/Kolkata',
-    geolocation: { latitude: 12.9716, longitude: 77.5946 },
-    permissions: ['geolocation'],
-    extraHTTPHeaders: generateHeaders(userAgent)
-  });
+  let browser, context, page;
 
-  // Add stealth properties
-  await context.addInitScript(() => {
-    Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
-    Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
-    Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en'] });
-    Object.defineProperty(window, 'chrome', { value: { runtime: {} } });
-  });
+  try {
+    // Step 1: Launch browser with timeout
+    console.log('🔧 Launching Chromium browser...');
+    const launchOptions = {
+      headless: process.env.NODE_ENV === 'production',
+      args: SCRAPER_CONFIG.launchArgs,
+      ignoreDefaultArgs: ['--enable-automation']
+    };
 
-  const page = await context.newPage();
-  await page.setDefaultTimeout(SCRAPER_CONFIG.timeouts.pageLoad);
-  await page.setDefaultNavigationTimeout(SCRAPER_CONFIG.timeouts.navigation);
+    // Add extra args for problematic environments
+    if (process.env.CI || process.env.DOCKER || process.env.CONTAINER) {
+      console.log('🐳 Container environment detected, adding stability flags');
+      launchOptions.args = [
+        ...launchOptions.args,
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--no-first-run',
+        '--disable-default-apps',
+        '--disable-extensions'
+      ];
+    }
 
-  return { browser, context, page };
+    browser = await withTimeout(
+      chromium.launch(launchOptions),
+      30000,
+      'Browser launch'
+    );
+    console.log('✅ Browser launched successfully');
+
+    // Step 2: Create context with timeout
+    console.log('🔧 Creating browser context...');
+    context = await withTimeout(
+      browser.newContext({
+        userAgent,
+        viewport,
+        locale: 'en-US',
+        timezoneId: 'Asia/Kolkata',
+        geolocation: { latitude: 12.9716, longitude: 77.5946 },
+        permissions: ['geolocation'],
+        extraHTTPHeaders: generateHeaders(userAgent)
+      }),
+      15000,
+      'Context creation'
+    );
+    console.log('✅ Browser context created');
+
+    // Step 3: Add stealth properties with timeout
+    console.log('🥷 Adding stealth properties...');
+    await withTimeout(
+      context.addInitScript(() => {
+        Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+        Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
+        Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en'] });
+        Object.defineProperty(window, 'chrome', { value: { runtime: {} } });
+      }),
+      10000,
+      'Stealth properties'
+    );
+    console.log('✅ Stealth properties added');
+
+    // Step 4: Create page with timeout
+    console.log('📄 Creating new page...');
+    page = await withTimeout(
+      context.newPage(),
+      15000,
+      'Page creation'
+    );
+    console.log('✅ Page created');
+
+    // Step 5: Set timeouts
+    console.log('⏱️ Setting page timeouts...');
+    await page.setDefaultTimeout(SCRAPER_CONFIG.timeouts.pageLoad);
+    await page.setDefaultNavigationTimeout(SCRAPER_CONFIG.timeouts.navigation);
+    console.log('✅ Browser initialization complete');
+
+    return { browser, context, page };
+
+  } catch (error) {
+    console.error('❌ Browser initialization failed:', error.message);
+
+    // Cleanup on failure
+    try {
+      if (page) await page.close();
+      if (context) await context.close();
+      if (browser) await browser.close();
+    } catch (cleanupError) {
+      console.error('⚠️ Cleanup failed:', cleanupError.message);
+    }
+
+    // Provide specific error guidance
+    if (error.message.includes('timeout')) {
+      console.error('🔍 Browser initialization timed out. Possible causes:');
+      console.error('   - Insufficient system resources (RAM/CPU)');
+      console.error('   - Missing system dependencies');
+      console.error('   - Container resource limits');
+      console.error('   - Network connectivity issues');
+      console.error('💡 Try: Increase container memory or use headless mode');
+    }
+
+    throw new Error(`Browser initialization failed: ${error.message}`);
+  }
 }
 
 /**
- * Establish NSE session
+ * Establish NSE session with timeout and error handling
  */
 async function establishNSESession(page) {
   console.log('🏠 Establishing NSE session...');
 
-  await page.goto('https://www.nseindia.com/', {
-    waitUntil: 'networkidle',
-    timeout: SCRAPER_CONFIG.timeouts.pageLoad
-  });
+  try {
+    console.log('🌐 Loading NSE homepage...');
 
-  await randomDelay(4000, 6000);
-  await simulateHumanBehavior(page);
+    // Navigate to NSE with timeout
+    await Promise.race([
+      page.goto('https://www.nseindia.com/', {
+        waitUntil: 'domcontentloaded',
+        timeout: SCRAPER_CONFIG.timeouts.pageLoad
+      }),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('NSE homepage load timeout')), 35000)
+      )
+    ]);
 
-  console.log('✅ NSE session established');
+    console.log('✅ NSE homepage loaded');
+
+    // Wait for page to stabilize
+    console.log('⏳ Waiting for page to stabilize...');
+    await randomDelay(3000, 5000);
+
+    // Check if page loaded successfully
+    const title = await page.title();
+    console.log(`📄 Page title: "${title}"`);
+
+    if (title.includes('Just a moment') || title.includes('Please wait')) {
+      console.log('🛡️ Detected protection screen, waiting longer...');
+      await randomDelay(10000, 15000);
+    }
+
+    // Simulate human behavior
+    console.log('🤖 Simulating human behavior...');
+    await simulateHumanBehavior(page);
+
+    console.log('✅ NSE session established');
+
+  } catch (error) {
+    console.error('❌ Failed to establish NSE session:', error.message);
+
+    if (error.message.includes('timeout')) {
+      console.error('🔍 NSE session timeout. Possible causes:');
+      console.error('   - NSE website is down or slow');
+      console.error('   - Network connectivity issues');
+      console.error('   - Firewall/proxy blocking access');
+      console.error('   - Geographic restrictions');
+    }
+
+    throw new Error(`Failed to establish NSE session: ${error.message}`);
+  }
 }
 
 /**
- * Navigate to corporate filings page
+ * Navigate to corporate filings page with timeout and verification
  */
 async function navigateToFilingsPage(page) {
   console.log('📄 Navigating to corporate filings page...');
 
-  for (const url of SCRAPER_CONFIG.filingUrls) {
-    try {
-      await page.goto(url, {
-        waitUntil: 'domcontentloaded',
-        timeout: 20000
-      });
+  for (let i = 0; i < SCRAPER_CONFIG.filingUrls.length; i++) {
+    const url = SCRAPER_CONFIG.filingUrls[i];
 
+    try {
+      console.log(`🔗 Trying URL ${i + 1}/${SCRAPER_CONFIG.filingUrls.length}: ${url}`);
+
+      // Navigate with timeout
+      await Promise.race([
+        page.goto(url, {
+          waitUntil: 'domcontentloaded',
+          timeout: 25000
+        }),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Page navigation timeout')), 30000)
+        )
+      ]);
+
+      console.log('✅ Page loaded, checking content...');
       await randomDelay(2000, 4000);
 
       const title = await page.title();
+      console.log(`📄 Page title: "${title}"`);
 
       // Handle protection screens
       if (title.includes('Just a moment') || title.includes('Checking your browser')) {
         console.log('🛡️ Detected protection screen, waiting...');
-        await page.waitForSelector('body', { timeout: 30000 });
-        await randomDelay(10000, 15000);
+        try {
+          await page.waitForSelector('body', { timeout: 30000 });
+          await randomDelay(10000, 15000);
+        } catch (protectionError) {
+          console.log('⚠️ Protection screen timeout, continuing...');
+        }
       }
 
-      // Verify page has required elements
-      const hasFilingElements = await page.evaluate(() => {
-        const searchInput = document.querySelector('input[placeholder*="Company"], input[placeholder*="company"], input[name*="company"], input[type="text"]');
-        const table = document.querySelector('table, .data-table, .filings-table');
-        return !!(searchInput || table);
-      });
+      // Verify page has required elements with timeout
+      console.log('🔍 Verifying page elements...');
+      const hasFilingElements = await Promise.race([
+        page.evaluate(() => {
+          const searchInput = document.querySelector('input[placeholder*="Company"], input[placeholder*="company"], input[name*="company"], input[type="text"]');
+          const table = document.querySelector('table, .data-table, .filings-table');
+          const hasElements = !!(searchInput || table);
+
+          // Log what we found for debugging
+          if (searchInput) console.log('Found search input');
+          if (table) console.log('Found table');
+
+          return hasElements;
+        }),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Element verification timeout')), 10000)
+        )
+      ]);
 
       if (hasFilingElements) {
         console.log('✅ Successfully reached corporate filings page');
+
+        // Add extra verification - check if page is interactive
+        try {
+          await page.waitForLoadState('networkidle', { timeout: 10000 });
+          console.log('✅ Page is fully loaded and interactive');
+        } catch (networkError) {
+          console.log('⚠️ Network not idle, but continuing...');
+        }
+
         return;
+      } else {
+        console.log('❌ Required elements not found on this page');
       }
 
     } catch (error) {
-      console.log(`⚠️ Failed to load ${url}, trying next...`);
+      console.log(`⚠️ Failed to load ${url}: ${error.message}`);
+
+      if (error.message.includes('timeout')) {
+        console.log('🔍 Page navigation timed out, trying next URL...');
+      }
+
       continue;
     }
   }
 
-  throw new Error('Could not access any corporate filings page');
+  console.error('💥 All corporate filings URLs failed');
+  console.error('🔍 Attempted URLs:');
+  SCRAPER_CONFIG.filingUrls.forEach((url, i) => {
+    console.error(`   ${i + 1}. ${url}`);
+  });
+
+  throw new Error('Could not access any corporate filings page - all URLs failed');
 }
 
 // ================================

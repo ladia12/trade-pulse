@@ -256,19 +256,74 @@ The scraper supports any NSE-listed company. Tested with:
 
 ## ⚠️ Troubleshooting
 
+### Browser Hanging Issues
+
+If the scraper hangs at "🚀 Initializing browser" without proceeding:
+
+1. **Run Browser Diagnostic Test**:
+```bash
+# Terminal test
+npm run test-browser
+
+# API endpoint test
+curl http://localhost:4000/api/diagnose/browser/quick
+curl http://localhost:4000/api/diagnose/browser
+```
+
+2. **Check System Resources**:
+   - Ensure sufficient RAM (minimum 2GB free)
+   - Check CPU usage
+   - Verify disk space availability
+
+3. **Container/Docker Issues**:
+   - Increase shared memory: `--shm-size=2gb`
+   - Add browser flags: `--disable-dev-shm-usage`
+   - Check container resource limits
+
+4. **Browser Installation Issues**:
+   - Run: `npx playwright install chromium --with-deps`
+   - Check executable path: `npx playwright install --dry-run`
+
+### Diagnostic Endpoints
+
+#### GET `/api/diagnose/browser/quick`
+Quick browser availability check:
+```bash
+curl http://localhost:4000/api/diagnose/browser/quick
+```
+
+#### GET `/api/diagnose/browser`
+Comprehensive browser functionality test:
+```bash
+curl http://localhost:4000/api/diagnose/browser
+```
+
+Returns detailed diagnostics including:
+- System environment information
+- Browser launch test results
+- Context and page creation tests
+- Navigation functionality test
+- Timing information for each step
+
 ### Common Issues
 
-1. **"Failed to establish NSE session"**
+1. **"Browser initialization failed: Browser launch timeout"**
+   - Insufficient system resources
+   - Missing browser dependencies
+   - Container resource limits
+   - **Solution**: Increase memory, install dependencies, or restart service
+
+2. **"Failed to establish NSE session"**
    - Check internet connection
    - Verify NSE website accessibility
    - Try again after a few minutes
 
-2. **"Could not find company search input"**
+3. **"Could not find company search input"**
    - NSE website structure may have changed
    - Check for site maintenance
    - Contact support if persistent
 
-3. **High memory usage**
+4. **High memory usage**
    - Ensure browser instances are properly cleaned up
    - Monitor concurrent requests
    - Restart service if needed

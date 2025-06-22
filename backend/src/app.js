@@ -10,6 +10,7 @@ const { errorHandler, notFoundHandler } = require('./middlewares/errorHandler');
 // Import routes
 const analyzeRoutes = require('./routes/analyze');
 const healthRoutes = require('./routes/health');
+const diagnoseRoutes = require('./routes/diagnose');
 
 const app = express();
 
@@ -21,8 +22,8 @@ app.use(helmet({
 
 // CORS configuration
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://your-frontend-domain.com'] 
+  origin: process.env.NODE_ENV === 'production'
+    ? ['https://your-frontend-domain.com']
     : ['http://localhost:3000', 'http://127.0.0.1:3000'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -52,6 +53,7 @@ app.use(logger);
 
 // API routes
 app.use('/api/health', healthRoutes);
+app.use('/api/diagnose', diagnoseRoutes);
 app.use(`/api/${process.env.API_VERSION || 'v1'}/analyze`, analyzeRoutes);
 
 // Root endpoint
@@ -63,6 +65,7 @@ app.get('/', (req, res) => {
     timestamp: new Date().toISOString(),
     endpoints: {
       health: '/api/health',
+      diagnose: '/api/diagnose',
       analyze: `/api/${process.env.API_VERSION || 'v1'}/analyze`
     }
   });
