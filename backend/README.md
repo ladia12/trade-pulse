@@ -454,29 +454,22 @@ The scraper supports any NSE-listed company. Tested with:
 
 6. **Browser installation errors**
    - **Error**: `Executable doesn't exist at /path/to/chrome`
-   - **Error**: `BEWARE: your OS is not officially supported by Playwright`
-   - **Error**: `spawn su ENOENT` or `Failed to install browsers`
    - **Solutions**:
      ```bash
-     # Quick fix - automated with fallbacks
+     # Quick fix - automated installation
      npm run startup
 
-     # Try safe installation (multiple fallback strategies)
-     npm run install-browsers-safe
+     # Manual installation
+     npm run install-browsers
 
-     # Manual installation with detailed diagnostics
-     npm run install-browsers-manual
+     # Or direct Playwright command
+     npx playwright install chromium --with-deps
 
-     # Fallback methods (try in order):
-     npm run install-browsers-fallback    # Without system deps
-     npm run install-browsers-force       # Force download
-     npx playwright install chromium      # Basic install
-
-     # Check status
+     # Check if browsers are installed
      npm run check-browsers
      ```
-   - **For unsupported OS/Docker**: Use `Dockerfile.alpine` or pre-installed browser images
-   - **For restricted environments**: Set `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` to system browser
+   - **For Docker/CI environments**: Use `scripts/startup.sh`
+   - **For production deployment**: Include browser installation in deployment script
 
 ### Debug Mode
 Set environment variable for verbose logging:
@@ -551,42 +544,8 @@ echo "✅ Deployment complete"
 ```bash
 # In your deployment script
 npm install
-npm run install-browsers-safe  # Uses fallback strategies
+npm run install-browsers
 npm run safe-start
-```
-
-**For Problematic Environments:**
-```bash
-# If you get "OS not officially supported" or "spawn su ENOENT" errors
-
-# Option 1: Use system browser
-sudo apt-get install chromium-browser  # Ubuntu/Debian
-# or
-sudo yum install chromium              # CentOS/RHEL
-# or
-sudo apk add chromium                  # Alpine
-
-# Then set environment variable
-export PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser
-
-# Option 2: Use Docker with pre-installed browsers
-docker build -f Dockerfile.alpine -t trade-pulse-backend .
-docker run -p 4000:4000 trade-pulse-backend
-
-# Option 3: Use manual installation script
-npm run install-browsers-manual
-```
-
-**Environment Variables for Browser Issues:**
-```bash
-# Use system-installed Chromium
-export PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser
-
-# Skip Playwright browser download
-export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=true
-
-# Custom browser cache directory
-export PLAYWRIGHT_BROWSERS_PATH=$HOME/.cache/ms-playwright
 ```
 
 ### Docker Support
@@ -632,27 +591,17 @@ EXPOSE 4000
 CMD ["npm", "run", "startup"]
 ```
 
-**Alternative Dockerfile for Problematic Environments:**
-```bash
-# Use this if standard Dockerfile fails with browser installation issues
-docker build -f Dockerfile.alpine -t trade-pulse-backend .
-docker run -p 4000:4000 trade-pulse-backend
-```
-
 **Docker Compose Example:**
 ```yaml
 version: '3.8'
 services:
   trade-pulse-backend:
-    build:
-      context: .
-      dockerfile: Dockerfile.alpine  # Use alternative for problematic environments
+    build: .
     ports:
       - "4000:4000"
     environment:
       - NODE_ENV=production
       - PORT=4000
-      - PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser
     volumes:
       - /dev/shm:/dev/shm
     restart: unless-stopped
@@ -914,14 +863,10 @@ npm run dev          # Development with auto-reload
 npm start            # Production start
 
 # Browser management
-npm run install-browsers         # Standard installation with system deps
-npm run install-browsers-safe    # Safe installation with fallbacks
-npm run install-browsers-fallback # Install without system dependencies
-npm run install-browsers-force   # Force download browsers
-npm run install-browsers-manual  # Manual installation with diagnostics
-npm run check-browsers           # Check browser installation status
-npm run setup                   # Full setup (install + browsers)
-npm run setup-dev              # Development setup
+npm run install-browsers    # Install Playwright browsers
+npm run check-browsers     # Check browser installation
+npm run setup             # Full setup (install + browsers)
+npm run setup-dev         # Development setup
 
 # Testing
 node src/test/testNSEScraper.js           # Run all tests
