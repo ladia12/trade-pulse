@@ -1,11 +1,13 @@
 const { chromium } = require('playwright');
+const { addExtra } = require('playwright-extra');
+const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 const NodeCache = require('node-cache');
 
 // Cache with 1-hour TTL
 const cache = new NodeCache({ stdTTL: 3600 });
 
 /**
- * NSE Scraper Configuration
+ * NSE Scraper Configuration with Enhanced Anti-Detection
  */
 const SCRAPER_CONFIG = {
   userAgents: [
@@ -21,6 +23,7 @@ const SCRAPER_CONFIG = {
     { width: 1440, height: 900 },
     { width: 1536, height: 864 }
   ],
+  // Enhanced launch args for maximum stealth
   launchArgs: [
     '--no-sandbox',
     '--disable-setuid-sandbox',
@@ -33,7 +36,37 @@ const SCRAPER_CONFIG = {
     '--disable-backgrounding-occluded-windows',
     '--disable-renderer-backgrounding',
     '--disable-features=TranslateUI',
-    '--disable-ipc-flooding-protection'
+    '--disable-ipc-flooding-protection',
+    // Advanced anti-detection flags
+    '--disable-blink-features=AutomationControlled',
+    '--disable-web-security',
+    '--disable-features=VizDisplayCompositor',
+    '--disable-extensions-except',
+    '--disable-plugins-discovery',
+    '--no-default-browser-check',
+    '--no-pings',
+    '--no-service-autorun',
+    '--password-store=basic',
+    '--use-mock-keychain',
+    '--disable-component-extensions-with-background-pages',
+    '--disable-default-apps',
+    '--mute-audio',
+    '--disable-background-networking',
+    '--disable-client-side-phishing-detection',
+    '--disable-component-update',
+    '--disable-domain-reliability',
+    '--disable-features=AudioServiceOutOfProcess',
+    '--disable-hang-monitor',
+    '--disable-offer-store-unmasked-wallet-cards',
+    '--disable-popup-blocking',
+    '--disable-print-preview',
+    '--disable-prompt-on-repost',
+    '--disable-speech-api',
+    '--disable-sync',
+    '--hide-scrollbars',
+    '--ignore-gpu-blacklist',
+    '--metrics-recording-only',
+    '--use-gl=swiftshader'
   ],
   timeouts: {
     pageLoad: 30000,
@@ -67,42 +100,136 @@ function randomDelay(min = 2000, max = 5000) {
 }
 
 /**
- * Generate realistic browser headers
+ * Generate realistic browser headers with advanced anti-detection
  */
 function generateHeaders(userAgent) {
-  return {
+  const headers = {
     'User-Agent': userAgent,
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-    'Accept-Language': 'en-US,en;q=0.9',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+    'Accept-Language': 'en-US,en;q=0.9,hi;q=0.8',
     'Accept-Encoding': 'gzip, deflate, br',
-    'Referer': 'https://www.nseindia.com/',
+    'Cache-Control': 'max-age=0',
     'Connection': 'keep-alive',
     'Upgrade-Insecure-Requests': '1',
     'Sec-Fetch-Dest': 'document',
     'Sec-Fetch-Mode': 'navigate',
-    'Sec-Fetch-Site': 'same-origin',
+    'Sec-Fetch-Site': 'none',
     'Sec-Fetch-User': '?1'
   };
+
+  // Add Chrome-specific headers for better detection bypass
+  if (userAgent.includes('Chrome')) {
+    const chromeVersion = userAgent.match(/Chrome\/(\d+)/)?.[1] || '120';
+    headers['sec-ch-ua'] = `"Google Chrome";v="${chromeVersion}", "Not A(Brand";v="99", "Chromium";v="${chromeVersion}"`;
+    headers['sec-ch-ua-mobile'] = '?0';
+    headers['sec-ch-ua-platform'] = '"Windows"';
+  }
+
+  // Add random DNT header sometimes for better fingerprint variation
+  if (Math.random() > 0.5) {
+    headers['DNT'] = '1';
+  }
+
+  return headers;
 }
 
 /**
- * Simulate human-like behavior
+ * Enhanced human-like behavior simulation for headless detection bypass
  */
 async function simulateHumanBehavior(page) {
   try {
-    // Random mouse movement
+    console.log('🤖 Simulating realistic human behavior...');
+
+    // Get viewport dimensions
     const viewport = page.viewportSize();
-    const x = Math.floor(Math.random() * viewport.width);
-    const y = Math.floor(Math.random() * viewport.height);
-    await page.mouse.move(x, y, { steps: 10 });
 
-    // Random scrolling
-    const scrollAmount = Math.floor(Math.random() * 500) + 100;
-    await page.evaluate((amount) => window.scrollBy(0, amount), scrollAmount);
+    // 1. Natural mouse movements with curves
+    for (let i = 0; i < 3; i++) {
+      const startX = Math.floor(Math.random() * viewport.width);
+      const startY = Math.floor(Math.random() * viewport.height);
+      const endX = Math.floor(Math.random() * viewport.width);
+      const endY = Math.floor(Math.random() * viewport.height);
 
-    await randomDelay(1000, 2000);
+      // Move in a curved path
+      const steps = Math.floor(Math.random() * 20) + 10;
+      await page.mouse.move(startX, startY);
+      await randomDelay(50, 200);
+      await page.mouse.move(endX, endY, { steps });
+      await randomDelay(100, 300);
+    }
+
+    // 2. Random scrolling patterns
+    const scrollPatterns = [
+      // Small scroll down
+      () => page.evaluate(() => window.scrollBy(0, Math.random() * 300 + 100)),
+      // Small scroll up
+      () => page.evaluate(() => window.scrollBy(0, -(Math.random() * 200 + 50))),
+      // Scroll to specific position
+      () => page.evaluate(() => window.scrollTo(0, Math.random() * 500)),
+    ];
+
+    for (let i = 0; i < 2; i++) {
+      const pattern = scrollPatterns[Math.floor(Math.random() * scrollPatterns.length)];
+      await pattern();
+      await randomDelay(200, 800);
+    }
+
+    // 3. Mouse hover on random elements
+    try {
+      const elements = await page.$$('a, button, input, div');
+      if (elements.length > 0) {
+        const randomElement = elements[Math.floor(Math.random() * Math.min(elements.length, 5))];
+        await randomElement.hover();
+        await randomDelay(100, 500);
+      }
+    } catch (hoverError) {
+      // Continue if hover fails
+    }
+
+    // 4. Focus and blur events
+    try {
+      await page.evaluate(() => {
+        // Simulate focus/blur events
+        const focusEvent = new Event('focus', { bubbles: true });
+        const blurEvent = new Event('blur', { bubbles: true });
+
+        if (document.body) {
+          document.body.dispatchEvent(focusEvent);
+          setTimeout(() => document.body.dispatchEvent(blurEvent), 100);
+        }
+      });
+    } catch (focusError) {
+      // Continue if focus simulation fails
+    }
+
+    // 5. Random keyboard events (non-destructive)
+    try {
+      const keys = ['Tab', 'Shift', 'Control'];
+      const randomKey = keys[Math.floor(Math.random() * keys.length)];
+      await page.keyboard.press(randomKey);
+      await randomDelay(50, 150);
+      // Release key
+      await page.keyboard.up(randomKey);
+    } catch (keyError) {
+      // Continue if keyboard simulation fails
+    }
+
+    // 6. Window resize simulation (viewport events)
+    try {
+      await page.evaluate(() => {
+        const resizeEvent = new Event('resize');
+        window.dispatchEvent(resizeEvent);
+      });
+    } catch (resizeError) {
+      // Continue if resize simulation fails
+    }
+
+    console.log('✅ Human behavior simulation completed');
+    await randomDelay(500, 1500);
+
   } catch (error) {
-    // Silently continue if human simulation fails
+    console.log('⚠️ Human behavior simulation partially failed, continuing...');
+    // Continue execution even if behavior simulation fails
   }
 }
 
@@ -111,13 +238,24 @@ async function simulateHumanBehavior(page) {
 // ================================
 
 /**
- * Initialize browser with stealth configuration and timeout handling
+ * Initialize browser with advanced stealth configuration and timeout handling
  */
-async function initializeBrowser() {
+async function initializeBrowser(forceHeadless = null) {
+  // Determine headless mode with multiple fallback options
+  let headless = true;
+  if (forceHeadless !== null) {
+    headless = forceHeadless;
+  } else if (process.env.FORCE_NON_HEADLESS === 'true') {
+    headless = false;
+    console.log('🔧 FORCE_NON_HEADLESS environment variable detected');
+  } else if (process.env.NODE_ENV !== 'production') {
+    headless = false; // Use non-headless for development
+  }
+
   const userAgent = getRandomElement(SCRAPER_CONFIG.userAgents);
   const viewport = getRandomElement(SCRAPER_CONFIG.viewports);
 
-  console.log(`🚀 Initializing browser (${viewport.width}x${viewport.height})`);
+  console.log(`🚀 Initializing browser (${viewport.width}x${viewport.height}) - Headless: ${headless}`);
 
   // Add timeout wrapper for each step
   const withTimeout = (promise, timeoutMs, operation) => {
@@ -132,12 +270,20 @@ async function initializeBrowser() {
   let browser, context, page;
 
   try {
-    // Step 1: Launch browser with timeout
-    console.log('🔧 Launching Chromium browser...');
+    // Step 1: Launch browser with timeout and enhanced stealth
+    console.log('🔧 Launching Chromium browser with stealth configuration...');
+
+    // Create enhanced Chromium instance with stealth plugin
+    const chromiumWithStealth = addExtra(chromium);
+    chromiumWithStealth.use(StealthPlugin());
+
     const launchOptions = {
-      headless: process.env.NODE_ENV === 'production',
+      headless,
       args: SCRAPER_CONFIG.launchArgs,
-      ignoreDefaultArgs: ['--enable-automation']
+      ignoreDefaultArgs: ['--enable-automation'],
+      // Additional anti-detection options
+      ignoreHTTPSErrors: true,
+      devtools: false
     };
 
     // Add extra args for problematic environments
@@ -154,11 +300,11 @@ async function initializeBrowser() {
     }
 
     browser = await withTimeout(
-      chromium.launch(launchOptions),
+      chromiumWithStealth.launch(launchOptions),
       30000,
       'Browser launch'
     );
-    console.log('✅ Browser launched successfully');
+    console.log('✅ Browser launched successfully with stealth configuration');
 
     // Step 2: Create context with timeout
     console.log('🔧 Creating browser context...');
@@ -168,28 +314,168 @@ async function initializeBrowser() {
         viewport,
         locale: 'en-US',
         timezoneId: 'Asia/Kolkata',
-        geolocation: { latitude: 12.9716, longitude: 77.5946 },
+        geolocation: { latitude: 28.6139, longitude: 77.2090 }, // Delhi coordinates for better Indian context
         permissions: ['geolocation'],
-        extraHTTPHeaders: generateHeaders(userAgent)
+        extraHTTPHeaders: generateHeaders(userAgent),
+        // Additional anti-detection context options
+        colorScheme: 'light',
+        reducedMotion: 'no-preference',
+        forcedColors: 'none',
+        // Mock screen size and device scale factor
+        screen: {
+          width: viewport.width,
+          height: viewport.height
+        },
+        deviceScaleFactor: 1,
+        hasTouch: false,
+        isMobile: false,
+        javaScriptEnabled: true,
+        acceptDownloads: true,
+        ignoreHTTPSErrors: true,
+        bypassCSP: true
       }),
       15000,
       'Context creation'
     );
     console.log('✅ Browser context created');
 
-    // Step 3: Add stealth properties with timeout
-    console.log('🥷 Adding stealth properties...');
+    // Step 3: Add comprehensive stealth properties with timeout
+    console.log('🥷 Adding comprehensive stealth properties...');
     await withTimeout(
       context.addInitScript(() => {
-        Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
-        Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
-        Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en'] });
-        Object.defineProperty(window, 'chrome', { value: { runtime: {} } });
+        // Remove webdriver property
+        Object.defineProperty(navigator, 'webdriver', {
+          get: () => undefined,
+        });
+
+        // Mock plugins array with realistic plugins
+        Object.defineProperty(navigator, 'plugins', {
+          get: () => ({
+            length: 4,
+            0: {
+              name: "Chrome PDF Plugin",
+              description: "Portable Document Format",
+              filename: "internal-pdf-viewer",
+              length: 1
+            },
+            1: {
+              name: "Chrome PDF Viewer",
+              description: "",
+              filename: "mhjfbmdgcfjbbpaeojofohoefgiehjai",
+              length: 1
+            },
+            2: {
+              name: "Native Client",
+              description: "",
+              filename: "internal-nacl-plugin",
+              length: 2
+            },
+            3: {
+              name: "WebKit built-in PDF",
+              description: "Portable Document Format",
+              filename: "webkit-pdf-plugin",
+              length: 1
+            }
+          }),
+        });
+
+        // Mock languages
+        Object.defineProperty(navigator, 'languages', {
+          get: () => ['en-US', 'en'],
+        });
+
+        // Mock Chrome runtime
+        Object.defineProperty(window, 'chrome', {
+          value: {
+            runtime: {
+              onConnect: undefined,
+              onMessage: undefined,
+              connect: () => {},
+              sendMessage: () => {}
+            }
+          },
+        });
+
+        // Mock permissions
+        Object.defineProperty(navigator, 'permissions', {
+          value: {
+            query: () => Promise.resolve({ state: 'granted' })
+          }
+        });
+
+        // Mock connection
+        Object.defineProperty(navigator, 'connection', {
+          value: {
+            effectiveType: '4g',
+            rtt: 150,
+            downlink: 2.0
+          }
+        });
+
+        // Mock memory info
+        Object.defineProperty(navigator, 'deviceMemory', {
+          value: 8
+        });
+
+        // Mock hardware concurrency
+        Object.defineProperty(navigator, 'hardwareConcurrency', {
+          value: 4
+        });
+
+        // Spoof canvas fingerprinting
+        const originalToDataURL = HTMLCanvasElement.prototype.toDataURL;
+        HTMLCanvasElement.prototype.toDataURL = function(type) {
+          if (type === 'image/png') {
+            return originalToDataURL.call(this, type);
+          }
+          return originalToDataURL.call(this, type);
+        };
+
+        // Mock screen properties to match viewport
+        Object.defineProperty(screen, 'width', { value: window.innerWidth });
+        Object.defineProperty(screen, 'height', { value: window.innerHeight });
+        Object.defineProperty(screen, 'availWidth', { value: window.innerWidth });
+        Object.defineProperty(screen, 'availHeight', { value: window.innerHeight - 40 });
+
+        // Remove automation indicators
+        delete window.__nightmare;
+        delete window._phantom;
+        delete window.callPhantom;
+        delete window.Buffer;
+        delete window.emit;
+        delete window.spawn;
+
+        // Mock Date.now to prevent timezone detection
+        const originalDateNow = Date.now;
+        Date.now = () => originalDateNow() + Math.floor(Math.random() * 100);
+
+        // Mock Math.random to make it less predictable
+        const originalRandom = Math.random;
+        Math.random = () => {
+          return originalRandom();
+        };
+
+        // Mock Notification permission
+        Object.defineProperty(Notification, 'permission', {
+          value: 'default'
+        });
+
+        // Mock battery API
+        Object.defineProperty(navigator, 'getBattery', {
+          value: () => Promise.resolve({
+            charging: true,
+            chargingTime: 0,
+            dischargingTime: Infinity,
+            level: 1
+          })
+        });
+
+        console.log('🔒 Advanced stealth properties applied');
       }),
       10000,
       'Stealth properties'
     );
-    console.log('✅ Stealth properties added');
+    console.log('✅ Comprehensive stealth properties added');
 
     // Step 4: Create page with timeout
     console.log('📄 Creating new page...');
@@ -200,11 +486,43 @@ async function initializeBrowser() {
     );
     console.log('✅ Page created');
 
-    // Step 5: Set timeouts
-    console.log('⏱️ Setting page timeouts...');
+    // Step 5: Set timeouts and additional page stealth
+    console.log('⏱️ Setting page timeouts and additional stealth...');
     await page.setDefaultTimeout(SCRAPER_CONFIG.timeouts.pageLoad);
     await page.setDefaultNavigationTimeout(SCRAPER_CONFIG.timeouts.navigation);
-    console.log('✅ Browser initialization complete');
+
+    // Additional page-level stealth
+    await context.addInitScript(() => {
+      // Override console.debug to prevent detection
+      console.debug = () => {};
+
+      // Mock additional navigator properties
+      Object.defineProperty(navigator, 'platform', { value: 'Win32' });
+      Object.defineProperty(navigator, 'product', { value: 'Gecko' });
+      Object.defineProperty(navigator, 'productSub', { value: '20030107' });
+      Object.defineProperty(navigator, 'vendor', { value: 'Google Inc.' });
+      Object.defineProperty(navigator, 'vendorSub', { value: '' });
+
+      // Hide automation traces
+      delete window.__webdriver_unwrapped;
+      delete window.__webdriver_script_fn;
+      delete window.__fxdriver_unwrapped;
+      delete window.__driver_unwrapped;
+      delete window.__webdriver_script_func;
+      delete window.__webdriver_script_function;
+      delete window.__selenium_unwrapped;
+      delete window.__fxdriver_evaluate;
+      delete window.__driver_evaluate;
+      delete window.__selenium_evaluate;
+      delete window.__webdriver_evaluate;
+      delete window.__selenium_unwrapped;
+
+      // Mock iframe detection bypass
+      Object.defineProperty(window, 'outerHeight', { value: window.innerHeight });
+      Object.defineProperty(window, 'outerWidth', { value: window.innerWidth });
+    });
+
+    console.log('✅ Browser initialization and stealth setup complete');
 
     return { browser, context, page };
 
@@ -972,7 +1290,23 @@ async function cleanupBrowser(browser, context, page) {
 }
 
 /**
- * Main scraping function with retry logic
+ * Initialize browser with fallback mode (headless -> non-headless)
+ */
+async function initializeBrowserWithFallback(preferHeadless = true) {
+  try {
+    // Try preferred mode first
+    return await initializeBrowser(preferHeadless);
+  } catch (error) {
+    if (preferHeadless) {
+      console.log('⚠️ Headless mode failed, trying non-headless as fallback...');
+      return await initializeBrowser(false);
+    }
+    throw error;
+  }
+}
+
+/**
+ * Main scraping function with retry logic and intelligent headless fallback
  */
 async function scrapeNSEFilings(companyName, options = {}) {
   const { maxRetries = 3 } = options;
@@ -987,16 +1321,33 @@ async function scrapeNSEFilings(companyName, options = {}) {
 
   let attempt = 0;
   let lastError = null;
+  let useHeadless = true;
+  let successfulMode = null;
 
   while (attempt < maxRetries) {
     attempt++;
-    console.log(`🔄 Attempt ${attempt}/${maxRetries} for: ${companyName}`);
+    console.log(`🔄 Attempt ${attempt}/${maxRetries} for: ${companyName} (headless: ${useHeadless})`);
 
     let browser, context, page;
 
     try {
-      // Initialize browser and scrape
-      ({ browser, context, page } = await initializeBrowser());
+      // Initialize browser with fallback capability
+      if (attempt === 1) {
+        // First attempt: try headless mode
+        ({ browser, context, page } = await initializeBrowserWithFallback(true));
+        useHeadless = true;
+      } else if (attempt === 2) {
+        // Second attempt: try non-headless mode if headless failed
+        console.log('🔄 Trying non-headless mode for better compatibility...');
+        ({ browser, context, page } = await initializeBrowserWithFallback(false));
+        useHeadless = false;
+      } else {
+        // Third attempt: use whatever worked before or fallback
+        const modeToTry = successfulMode !== null ? successfulMode : !useHeadless;
+        ({ browser, context, page } = await initializeBrowserWithFallback(modeToTry));
+        useHeadless = modeToTry;
+      }
+
       await establishNSESession(page);
       await navigateToFilingsPage(page);
       await searchCompanyFilings(page, companyName);
@@ -1008,18 +1359,30 @@ async function scrapeNSEFilings(companyName, options = {}) {
         filings,
         count: filings.length,
         timestamp: new Date().toISOString(),
-        cached: false
+        cached: false,
+        mode: useHeadless ? 'headless' : 'non-headless'
       };
+
+      // Remember successful mode for future attempts
+      successfulMode = useHeadless;
 
       // Cache the result
       cache.set(cacheKey, result);
-      console.log(`✅ Scraping completed for: ${companyName} (${filings.length} filings)`);
+      console.log(`✅ Scraping completed for: ${companyName} (${filings.length} filings) [${result.mode}]`);
 
       return result;
 
     } catch (error) {
       lastError = error;
       console.error(`❌ Attempt ${attempt} failed:`, error.message);
+
+      // If first attempt with headless failed with connection error, try non-headless next
+      if (attempt === 1 && (error.message.includes('ERR_HTTP2_PROTOCOL_ERROR') ||
+                            error.message.includes('ERR_CONNECTION_REFUSED') ||
+                            error.message.includes('ERR_NETWORK_CHANGED'))) {
+        console.log('🔄 Network/connection error detected, will try non-headless mode next...');
+        useHeadless = false;
+      }
 
       if (attempt < maxRetries) {
         const backoffDelay = Math.pow(2, attempt) * 1000;
@@ -1033,6 +1396,7 @@ async function scrapeNSEFilings(companyName, options = {}) {
   }
 
   console.error(`💥 All ${maxRetries} attempts failed for: ${companyName}`);
+  console.error(`💡 Consider checking NSE website availability or network connection`);
   throw lastError || new Error('Scraping failed after all retry attempts');
 }
 

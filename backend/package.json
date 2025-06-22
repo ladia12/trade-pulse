@@ -7,7 +7,8 @@
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "test-browser": "node scripts/test-browser.js"
+    "test-browser": "node scripts/test-browser.js",
+    "test-stealth": "node scripts/test-headless-stealth.js"
   },
   "keywords": ["express", "api", "nse", "corporate", "analysis"],
   "author": "Trade Pulse Team",
