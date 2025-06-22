@@ -111,29 +111,9 @@ async function simulateHumanBehavior(page) {
 // ================================
 
 /**
- * Validate Playwright browser installation
- */
-async function validateBrowserInstallation() {
-  try {
-    // Try to get executable path to validate installation
-    const executablePath = chromium.executablePath();
-    console.log(`✅ Chromium executable found at: ${executablePath}`);
-    return true;
-  } catch (error) {
-    console.error('❌ Chromium browser not found');
-    console.error('💡 Please run: npm run install-browsers');
-    console.error('💡 Or run: npx playwright install chromium --with-deps');
-    throw new Error('Playwright Chromium browser is not installed. Please run "npm run install-browsers" or "npx playwright install chromium --with-deps"');
-  }
-}
-
-/**
  * Initialize browser with stealth configuration
  */
 async function initializeBrowser() {
-  // Validate browser installation first
-  await validateBrowserInstallation();
-
   const userAgent = getRandomElement(SCRAPER_CONFIG.userAgents);
   const viewport = getRandomElement(SCRAPER_CONFIG.viewports);
 
