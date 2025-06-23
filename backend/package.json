@@ -8,21 +8,29 @@
     "dev": "nodemon src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "test-browser": "node scripts/test-browser.js",
-    "test-stealth": "node scripts/test-headless-stealth.js"
+    "test-stealth": "node scripts/test-headless-stealth.js",
+    "test-hybrid": "node scripts/test-hybrid-api.js"
   },
-  "keywords": ["express", "api", "nse", "corporate", "analysis"],
+  "keywords": [
+    "express",
+    "api",
+    "nse",
+    "corporate",
+    "analysis"
+  ],
   "author": "Trade Pulse Team",
   "license": "MIT",
   "dependencies": {
-    "express": "^4.18.2",
+    "axios": "^1.10.0",
     "cors": "^2.8.5",
-    "helmet": "^7.1.0",
     "dotenv": "^16.3.1",
+    "express": "^4.18.2",
     "express-rate-limit": "^7.1.5",
+    "helmet": "^7.1.0",
+    "node-cache": "^5.1.2",
     "playwright": "^1.40.0",
     "playwright-extra": "^4.3.6",
-    "puppeteer-extra-plugin-stealth": "^2.11.2",
-    "node-cache": "^5.1.2"
+    "puppeteer-extra-plugin-stealth": "^2.11.2"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"
