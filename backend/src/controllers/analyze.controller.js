@@ -80,6 +80,7 @@ const analyzeCompany = async (req, res, next) => {
             'desc',
             'attchmntFile',
             'smIndustry',
+            'sm_name',
             'attchmntText',
             'fileSize',
             'exchdisstime'
