@@ -93,13 +93,12 @@ function formatAnnouncement(announcement) {
 /**
  * Fetch corporate announcements from NSE API
  * @param {string} symbol - Company symbol (e.g., 'RELIANCE')
- * @param {string} issuer - Company issuer name (e.g., 'Reliance Industries Limited')
  * @param {string} userAgent - User agent from cookie extraction
  * @param {string} cookies - Cookie string from extraction
  * @returns {Promise<Array>} - Array of filtered and formatted announcements
  */
-async function fetchCorporateAnnouncements(symbol, issuer, userAgent, cookies) {
-  console.log(`📡 Fetching corporate announcements for: ${symbol} (${issuer})`);
+async function fetchCorporateAnnouncements(symbol, userAgent, cookies) {
+  console.log(`📡 Fetching corporate announcements for: ${symbol}`);
 
   // Check cache first
   const cacheKey = `announcements_${symbol.toLowerCase()}`;
@@ -112,8 +111,7 @@ async function fetchCorporateAnnouncements(symbol, issuer, userAgent, cookies) {
   // Prepare request parameters
   const params = {
     index: 'equities',
-    symbol: symbol.toUpperCase(),
-    issuer: encodeURIComponent(issuer)
+    symbol: symbol.toUpperCase()
   };
 
   const headers = generateAPIHeaders(userAgent, cookies);
@@ -196,50 +194,14 @@ async function fetchCorporateAnnouncements(symbol, issuer, userAgent, cookies) {
 }
 
 /**
- * Get company announcements with fallback issuer lookup
+ * Get company announcements
  * @param {string} symbol - Company symbol
  * @param {string} userAgent - User agent from cookie extraction
  * @param {string} cookies - Cookie string from extraction
- * @param {string} providedIssuer - Optional provided issuer name
  * @returns {Promise<Array>} - Array of filtered and formatted announcements
  */
-async function getCompanyAnnouncements(symbol, userAgent, cookies, providedIssuer = null) {
-  // Common issuer name mappings for popular stocks
-  const issuerMappings = {
-    'RELIANCE': 'Reliance Industries Limited',
-    'TCS': 'Tata Consultancy Services Limited',
-    'INFY': 'Infosys Limited',
-    'HDFCBANK': 'HDFC Bank Limited',
-    'ICICIBANK': 'ICICI Bank Limited',
-    'SBIN': 'State Bank of India',
-    'BHARTIARTL': 'Bharti Airtel Limited',
-    'ITC': 'ITC Limited',
-    'HINDUNILVR': 'Hindustan Unilever Limited',
-    'LT': 'Larsen & Toubro Limited',
-    'KOTAKBANK': 'Kotak Mahindra Bank Limited',
-    'AXISBANK': 'Axis Bank Limited',
-    'HCLTECH': 'HCL Technologies Limited',
-    'WIPRO': 'Wipro Limited',
-    'ADANIPORTS': 'Adani Ports and Special Economic Zone Limited',
-    'MARUTI': 'Maruti Suzuki India Limited',
-    'BAJFINANCE': 'Bajaj Finance Limited',
-    'NESTLEIND': 'Nestle India Limited',
-    'TATAMOTORS': 'Tata Motors Limited',
-    'TECHM': 'Tech Mahindra Limited'
-  };
-
-  const issuer = providedIssuer || issuerMappings[symbol.toUpperCase()] || `${symbol} Limited`;
-
-  try {
-    return await fetchCorporateAnnouncements(symbol, issuer, userAgent, cookies);
-  } catch (error) {
-    // If primary issuer fails, try with just the symbol
-    if (!providedIssuer && issuer !== symbol) {
-      console.log(`🔄 Retrying with fallback issuer: ${symbol}`);
-      return await fetchCorporateAnnouncements(symbol, symbol, userAgent, cookies);
-    }
-    throw error;
-  }
+async function getCompanyAnnouncements(symbol, userAgent, cookies) {
+  return await fetchCorporateAnnouncements(symbol, userAgent, cookies);
 }
 
 module.exports = {
