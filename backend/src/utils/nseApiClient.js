@@ -243,9 +243,5 @@ async function getCompanyAnnouncements(symbol, userAgent, cookies, providedIssue
 }
 
 module.exports = {
-  fetchCorporateAnnouncements,
-  getCompanyAnnouncements,
-  formatAnnouncement,
-  filterLast7Days,
-  NSE_API_CONFIG
+  getCompanyAnnouncements
 };

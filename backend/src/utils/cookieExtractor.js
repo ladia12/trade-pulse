@@ -215,6 +215,5 @@ async function extractNSECookies(targetUrl = 'https://www.nseindia.com/companies
 }
 
 module.exports = {
-  extractNSECookies,
-  COOKIE_CONFIG
+  extractNSECookies
 };

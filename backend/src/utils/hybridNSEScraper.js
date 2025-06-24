@@ -238,8 +238,5 @@ function getCacheStats() {
 
 module.exports = {
   scrapeNSEAnnouncementsHybrid,
-  validateSymbol,
-  clearCachedSession,
-  getCacheStats,
-  HYBRID_CONFIG
+  validateSymbol
 };
