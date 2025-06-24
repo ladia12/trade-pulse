@@ -1,55 +1,102 @@
 const express = require('express');
+const { testConnection } = require('../utils/supabaseClient');
+
 const router = express.Router();
 
 /**
- * Health check endpoint
+ * Health Check Endpoint
  * GET /api/health
+ * Returns the current status of the API server and database connection
  */
-router.get('/', (req, res) => {
-  const healthCheck = {
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    environment: process.env.NODE_ENV || 'development',
-    version: process.env.API_VERSION || 'v1',
-    memory: {
-      used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024 * 100) / 100,
-      total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024 * 100) / 100,
-      external: Math.round(process.memoryUsage().external / 1024 / 1024 * 100) / 100
-    },
-    cpu: {
-      usage: process.cpuUsage()
-    }
-  };
+router.get('/', async (req, res) => {
+  try {
+    const startTime = Date.now();
 
-  res.status(200).json(healthCheck);
+    // Test database connection
+    const dbStatus = await testConnection();
+
+    const responseTime = Date.now() - startTime;
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Trade Pulse Backend API is running',
+      timestamp: new Date().toISOString(),
+      version: process.env.API_VERSION || 'v1',
+      environment: process.env.NODE_ENV || 'development',
+      uptime: process.uptime(),
+      responseTime: `${responseTime}ms`,
+      database: {
+        connected: dbStatus,
+        provider: 'Supabase PostgreSQL'
+      },
+      endpoints: {
+        analyze: `/api/${process.env.API_VERSION || 'v1'}/analyze`,
+        health: '/api/health',
+        diagnose: '/api/diagnose'
+      }
+    });
+  } catch (error) {
+    console.error('❌ [HEALTH CHECK] Error during health check:', error);
+
+    res.status(503).json({
+      status: 'error',
+      message: 'Service temporarily unavailable',
+      timestamp: new Date().toISOString(),
+      error: error.message,
+      database: {
+        connected: false,
+        provider: 'Supabase PostgreSQL'
+      }
+    });
+  }
 });
 
 /**
- * Detailed health check endpoint
- * GET /api/health/detailed
+ * Database Health Check Endpoint
+ * GET /api/health/database
+ * Returns detailed database connection status
  */
-router.get('/detailed', (req, res) => {
-  const detailedHealth = {
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    environment: process.env.NODE_ENV || 'development',
-    version: process.env.API_VERSION || 'v1',
-    system: {
-      platform: process.platform,
-      arch: process.arch,
-      nodeVersion: process.version,
-      pid: process.pid
-    },
-    memory: process.memoryUsage(),
-    cpu: process.cpuUsage(),
-    loadAverage: process.platform !== 'win32' ? require('os').loadavg() : 'N/A (Windows)',
-    freeMemory: require('os').freemem(),
-    totalMemory: require('os').totalmem()
-  };
+router.get('/database', async (req, res) => {
+  try {
+    const startTime = Date.now();
+    const dbStatus = await testConnection();
+    const responseTime = Date.now() - startTime;
 
-  res.status(200).json(detailedHealth);
+    if (dbStatus) {
+      res.status(200).json({
+        status: 'success',
+        message: 'Database connection healthy',
+        database: {
+          connected: true,
+          provider: 'Supabase PostgreSQL',
+          url: process.env.SUPABASE_URL ? 'configured' : 'missing',
+          responseTime: `${responseTime}ms`
+        },
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      res.status(503).json({
+        status: 'error',
+        message: 'Database connection failed',
+        database: {
+          connected: false,
+          provider: 'Supabase PostgreSQL',
+          url: process.env.SUPABASE_URL ? 'configured' : 'missing',
+          responseTime: `${responseTime}ms`
+        },
+        timestamp: new Date().toISOString()
+      });
+    }
+  } catch (error) {
+    console.error('❌ [DB HEALTH CHECK] Error during database health check:', error);
+
+    res.status(503).json({
+      status: 'error',
+      message: 'Database health check failed',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 module.exports = router;

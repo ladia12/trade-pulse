@@ -100,8 +100,7 @@ async function scrapeNSEAnnouncementsHybrid(symbol, options = {}) {
     const announcements = await getCompanyAnnouncements(
       symbol,
       sessionData.userAgent,
-      sessionData.cookies,
-      issuer
+      sessionData.cookies
     );
 
     // Step 4: Format response

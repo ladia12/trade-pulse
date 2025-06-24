@@ -84,6 +84,7 @@ function formatAnnouncement(announcement) {
     desc: announcement.desc || '',
     attchmntFile: announcement.attchmntFile || '',
     smIndustry: announcement.smIndustry || '',
+    sm_name: announcement.sm_name || '',
     attchmntText: announcement.attchmntText || '',
     fileSize: announcement.fileSize || '',
     exchdisstime: announcement.exchdisstime || ''
