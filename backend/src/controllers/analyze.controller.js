@@ -1,9 +1,11 @@
 const { scrapeNSEAnnouncementsHybrid, validateSymbol } = require('../utils/hybridNSEScraper');
+const { insertNSEFilings } = require('../utils/supabaseClient');
 
 /**
- * Analyze Company Controller - Hybrid Implementation
+ * Analyze Company Controller - Hybrid Implementation with Supabase Persistence
  * Handles POST requests to analyze NSE-listed companies and fetch corporate announcements
  * Uses hybrid approach: Playwright for cookie extraction + Axios for API calls
+ * Persists announcements to Supabase PostgreSQL database
  */
 const analyzeCompany = async (req, res, next) => {
   try {
@@ -55,11 +57,37 @@ const analyzeCompany = async (req, res, next) => {
       console.log(`🚀 [HYBRID SCRAPER] Starting hybrid NSE analysis for: "${validatedSymbol}"`);
       const scrapingResult = await scrapeNSEAnnouncementsHybrid(validatedSymbol, scrapingOptions);
 
+      // Persist announcements to Supabase database (non-blocking)
+      let dbResult = null;
+      if (scrapingResult.announcements && scrapingResult.announcements.length > 0) {
+        try {
+          console.log(`💾 [DATABASE] Attempting to persist ${scrapingResult.announcements.length} announcements for ${validatedSymbol}`);
+          dbResult = await insertNSEFilings(scrapingResult.announcements, validatedSymbol);
+
+          if (dbResult.success) {
+            console.log(`✅ [DATABASE] Successfully persisted announcements for ${validatedSymbol}`);
+          } else {
+            console.warn(`⚠️ [DATABASE] Failed to persist some announcements for ${validatedSymbol}: ${dbResult.error}`);
+          }
+        } catch (dbError) {
+          console.error(`❌ [DATABASE] Database persistence error for ${validatedSymbol}:`, dbError.message);
+          // Continue with the response even if database fails
+          dbResult = {
+            success: false,
+            error: dbError.message,
+            insertedCount: 0,
+            skippedCount: scrapingResult.announcements.length
+          };
+        }
+      } else {
+        console.log(`ℹ️ [DATABASE] No announcements to persist for ${validatedSymbol}`);
+      }
+
       // Calculate response time
       const responseTime = Date.now() - startTime;
 
-      // Return successful response with announcements data
-      return res.status(200).json({
+      // Return successful response with announcements data and database info
+      const response = {
         success: true,
         symbol: validatedSymbol,
         issuer: issuer || 'Auto-detected',
@@ -86,7 +114,19 @@ const analyzeCompany = async (req, res, next) => {
             'exchdisstime'
           ]
         }
-      });
+      };
+
+      // Add database persistence info to response
+      if (dbResult) {
+        response.database = {
+          persisted: dbResult.success,
+          insertedCount: dbResult.insertedCount,
+          skippedCount: dbResult.skippedCount,
+          error: dbResult.success ? null : dbResult.error
+        };
+      }
+
+      return res.status(200).json(response);
 
     } catch (scrapingError) {
       console.error(`❌ [HYBRID SCRAPER] Scraping failed for "${validatedSymbol}":`, scrapingError.message);
